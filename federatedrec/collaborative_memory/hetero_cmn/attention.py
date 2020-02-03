@@ -19,6 +19,9 @@ class MemoryMask(tf.keras.layers.Layer):
     def __init__(self, name='MemoryMask', **kwargs):
         super(MemoryMask, self).__init__(name=name, **kwargs)
 
+    def get_config(self):
+        return super(MemoryMask, self).get_config()
+
     def call(self, inputs, mask_length, maxlen=None):
         """
         Apply a memory mask such that the values we mask result in being the
@@ -68,6 +71,9 @@ class ApplyAttentionMemory(tf.keras.layers.Layer):
 
     def __init__(self, name="AttentionMemory", **kwargs):
         super(ApplyAttentionMemory, self).__init__(name=name, **kwargs)
+
+    def get_config(self):
+        return super(ApplyAttentionMemory, self).get_config()
 
     def call(self, memory, output_memory, query, memory_mask=None, maxlen=None):
         """
