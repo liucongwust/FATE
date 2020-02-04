@@ -40,9 +40,8 @@ message HeteroCMNParam {
     string loss = 8;
     int32 embed_dim = 9;
     int32 hops = 10;
-    int32 neg_count = 11;
-    float grad_clip = 12;
-    float l2_coef = 13;
+    int32 max_len = 11;
+    float l2_coef = 12;
 }
 
 message CMNModelMeta {

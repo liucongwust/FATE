@@ -91,12 +91,9 @@ class CMNParam(BaseParam):
 
     hops:  hopt count of CMN model
 
-    neg_count: negative items of each user
+    max_len: max length of neighbors
 
     l2_coef: l2 penalty coefficient
-
-    grad_clip: gradient clip coefficient
-
     """
 
     def __init__(self,
@@ -117,7 +114,7 @@ class CMNParam(BaseParam):
                  validation_freqs=None,
                  metrics: typing.Union[str, list] = None,
                  loss: str = 'mse',
-                 hops=2, neg_count=4, grad_clip=5.0, l2_coef=0.1
+                 hops=2, neg_count=4, l2_coef=0.1, max_len=20
                  ):
         super(CMNParam, self).__init__()
         self.penalty = penalty
@@ -135,8 +132,8 @@ class CMNParam(BaseParam):
         self.decay_sqrt = decay_sqrt
         self.validation_freqs = validation_freqs
         self.hops = hops
+        self.max_len = max_len
         self.neg_count = neg_count
-        self.grad_clip = grad_clip
         self.l2_coef = l2_coef
         self.secure_aggregate = secure_aggregate
         self.aggregate_every_n_epoch = aggregate_every_n_epoch
@@ -231,19 +228,19 @@ class CMNParam(BaseParam):
                 "CMN(collaborative Memory Networks)'s hops {} not supported, should be 'int'".format(
                     self.hops))
 
+        if type(self.max_len).__name__ not in ["int"]:
+            raise ValueError(
+                "CMN(collaborative Memory Networks)'s max_len {} not supported, should be 'int'".format(
+                    self.max_len))
+
         if type(self.neg_count).__name__ not in ["int"]:
             raise ValueError(
                 "CMN(collaborative Memory Networks)'s neg_count {} not supported, should be 'int'".format(
                     self.neg_count))
 
-        if type(self.grad_clip).__name__ not in ["int", "float"]:
-            raise ValueError(
-                "CMN(collaborative Memory Networks)'s grad_clip {} not supported, should be 'int' or 'float'".format(
-                    self.grad_clip))
-
         if type(self.l2_coef).__name__ not in ["int", "float"]:
             raise ValueError(
-                "CMN(collaborative Memory Networks)'s grad_clip {} not supported, should be 'int' or 'float'".format(
+                "CMN(collaborative Memory Networks)'s l2_coef {} not supported, should be 'int' or 'float'".format(
                     self.l2_coef))
 
         return True
@@ -330,7 +327,7 @@ class HeteroCMNParam(CMNParam):
                  predict_param=PredictParam(), cv_param=CrossValidationParam(),
                  decay=1, decay_sqrt=True,
                  aggregate_iters=1, validation_freqs=None,
-                 hops=2, neg_count=4, grad_clip=5.0, l2_coef=0.1,
+                 hops=2, max_len=4, l2_coef=0.1, neg_count=10,
                  secure_aggregate: bool = True,
                  aggregate_every_n_epoch: int = 1,
                  loss: str = "mse",
@@ -346,8 +343,8 @@ class HeteroCMNParam(CMNParam):
                                              decay=decay,
                                              decay_sqrt=decay_sqrt,
                                              hops=hops,
+                                             max_len=max_len,
                                              neg_count=neg_count,
-                                             grad_clip=grad_clip,
                                              l2_coef=l2_coef,
                                              secure_aggregate=secure_aggregate,
                                              aggregate_every_n_epoch=aggregate_every_n_epoch,
@@ -375,9 +372,8 @@ class HeteroCMNParam(CMNParam):
         pb.early_stop.early_stop = self.early_stop.converge_func
         pb.early_stop.eps = self.early_stop.eps
         pb.hops = self.hops
-        pb.neg_count = self.neg_count
+        pb.max_len = self.max_len
         pb.l2_coef = self.l2_coef
-        pb.grad_clip = self.grad_clip
 
         for metric in self.metrics:
             pb.metrics.append(metric)
@@ -397,4 +393,7 @@ class HeteroCMNParam(CMNParam):
         self.metrics = list(pb.metrics)
         self.optimizer = self._parse_optimizer(dict(optimizer=pb.optimizer.optimizer, **json.loads(pb.optimizer.args)))
         self.loss = pb.loss
+        self.max_len = pb.max_len
+        self.hops = pb.hops
+        self.l2_coef = pb.l2_coef
         return pb

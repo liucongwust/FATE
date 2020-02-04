@@ -15,7 +15,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-
+import os
 import io
 import copy
 import typing
@@ -26,7 +26,7 @@ import tensorflow as tf
 from tensorflow.keras import Model
 from tensorflow.python.keras.backend import set_session
 from tensorflow.keras.initializers import RandomNormal
-from tensorflow.keras.layers import Input, Embedding, Lambda, Subtract, Concatenate, Multiply, Dense
+from tensorflow.keras.layers import Input, Embedding, Lambda, Subtract, Concatenate, Multiply, Dense, Flatten
 from tensorflow.keras.regularizers import l2
 
 from arch.api.utils import log_utils
@@ -138,7 +138,8 @@ class CMNModel:
         return self._predict_model.predict(data)
 
     @classmethod
-    def restore_model(cls, model_bytes, user_num, item_num, embedding_dim):
+    def restore_model(cls, model_bytes, user_num, item_num, embedding_dim,
+                      hops, max_len, l2_coef, loss, optimizer, metrics):
         """
         Restore model from model bytes.
         :param model_bytes: model bytes of saved model.
@@ -154,8 +155,10 @@ class CMNModel:
                     file.extractall(tmp_path)
 
             keras_model = tf.keras.experimental.load_from_saved_model(
-                saved_model_path=tmp_path)
-        model = cls(user_num=user_num, item_num=item_num, embedding_dim=embedding_dim)
+                saved_model_path=tmp_path, custom_objects={"VariableLengthMemoryLayer": VariableLengthMemoryLayer})
+        model = cls(user_num=user_num, item_num=item_num, embedding_dim=embedding_dim
+                    , hops=hops, max_len=max_len, l2_coef=l2_coef
+                    , loss=loss, optimizer=optimizer, metrics=metrics)
         model._set_predict_model(keras_model)
         return model
 
@@ -171,10 +174,13 @@ class CMNModel:
                 self._predict_model, saved_model_path=tmp_path)
 
             model_bytes = zip_dir_as_bytes(tmp_path)
+            os.system(f"tree {tmp_path} || true")
 
         return model_bytes
 
-    def build(self, user_num, item_num, embedding_dim, optimizer='rmsprop', loss='mse', metrics='mse'):
+    def build(self, user_num, item_num, embedding_dim,
+              max_len, hops, l2_coef, optimizer='rmsprop', loss='mse', metrics='mse'):
+
         """
         build network graph of model
         :param user_num: user num
@@ -191,50 +197,52 @@ class CMNModel:
         neg_items_input = Input(shape=(1,), dtype='int32', name='neg_items_input')
         pos_length_input = Input(shape=(1,), dtype='int32', name='pos_length_input')
         neg_length_input = Input(shape=(1,), dtype='int32', name='neg_length_input')
-        pos_neighbors_input = Input(shape=(self.max_len,), dtype='int32', name='pos_neighbors_input')
-        neg_neighbors_input = Input(shape=(self.max_len,), dtype='int32', name='neg_neighbors_input')
+        pos_neighbors_input = Input(shape=(max_len,), dtype='int32', name='pos_neighbors_input')
+        neg_neighbors_input = Input(shape=(max_len,), dtype='int32', name='neg_neighbors_input')
 
-        users = Lambda(lambda x: tf.reshape(x, [-1]))(users_input)
+        # users = Lambda(lambda x: tf.reshape(x, [-1]))(users_input)
         items = Lambda(
-            lambda x: tf.strings.to_hash_bucket(tf.strings.as_string(tf.reshape(x, [-1])), self.item_num))(items_input)
+            lambda x: tf.strings.to_hash_bucket(tf.strings.as_string(x), item_num))(items_input)
         neg_items = Lambda(
-            lambda x: tf.strings.to_hash_bucket(tf.strings.as_string(tf.reshape(x, [-1])), self.item_num))(
+            lambda x: tf.strings.to_hash_bucket(tf.strings.as_string(tf.reshape(x, [-1])), item_num))(
             neg_items_input)
-        pos_length = Lambda(lambda x: tf.squeeze(x, 1))(pos_length_input)
-        neg_length = Lambda(lambda x: tf.squeeze(x, 1))(neg_length_input)
+        pos_length = Lambda(lambda x: tf.keras.backend.squeeze(x, 1))(pos_length_input)
+        neg_length = Lambda(lambda x: tf.keras.backend.squeeze(x, 1))(neg_length_input)
 
-        user_embed_layer = Embedding(self.user_num, self.embedding_dim,
+        user_embed_layer = Embedding(user_num, embedding_dim,
                                      embeddings_initializer=RandomNormal(stddev=0.1),
                                      name='MemoryEmbed')
 
-        item_embed_layer = Embedding(self.item_num, self.embedding_dim,
+        item_embed_layer = Embedding(item_num, embedding_dim,
                                      embeddings_initializer=RandomNormal(stddev=0.1),
                                      name='ItemMemory')
 
-        user_external_embed_layer = Embedding(self.user_num, self.embedding_dim,
+        user_external_embed_layer = Embedding(user_num, embedding_dim,
                                               embeddings_initializer=RandomNormal(stddev=0.1),
                                               name="MemoryOutput")
-
-        _mem_layer = VariableLengthMemoryLayer(name='UserMemoryLayer', maxlen=self.max_len,
-                                               hops=self.hops,
-                                               embed_size=self.embedding_dim)
+        # _mem_layer = VariableLengthMemoryLayer(name='UserMemoryLayer')
+        _mem_layer = VariableLengthMemoryLayer(name='UserMemoryLayer', maxlen=max_len,
+                                               hops=hops,
+                                               embed_size=embedding_dim)
         output_module = tf.keras.Sequential([
-            Dense(units=self.embedding_dim
+            Dense(units=embedding_dim
                   , use_bias=True
                   , activation=tf.nn.relu
                   , kernel_initializer=RandomNormal(stddev=0.1)
-                  , kernel_regularizer=l2(self.l2_coef)
+                  , kernel_regularizer=l2(l2_coef)
                   , name='Layer'),
             Dense(units=1
                   , use_bias=False
                   , activation=tf.nn.relu
                   , kernel_initializer=RandomNormal(stddev=0.1)
-                  , kernel_regularizer=l2(self.l2_coef)
+                  , kernel_regularizer=l2(l2_coef)
                   , name='OutputVector')
         ])
         # positive
-        cur_user_embed = user_embed_layer(users)
+        cur_user_embed = user_embed_layer(users_input)
+        cur_user_embed = Flatten()(cur_user_embed)
         cur_item_embed = item_embed_layer(items)
+        cur_item_embed = Flatten()(cur_item_embed)
         neighbor_embed = user_embed_layer(pos_neighbors_input)
         neighbor_output_embed = user_external_embed_layer(pos_neighbors_input)
 
@@ -247,6 +255,7 @@ class CMNModel:
 
         # negative
         neg_item_embed = item_embed_layer(neg_items)
+        neg_item_embed = Flatten()(neg_item_embed)
         neg_neighbor_embed = user_embed_layer(neg_neighbors_input)
         neg_neighbor_output_embed = user_external_embed_layer(neg_neighbors_input)
         neg_query = (cur_user_embed, neg_item_embed)
@@ -256,7 +265,7 @@ class CMNModel:
         neg_dot = Multiply()([cur_user_embed, neg_item_embed])
         neg_output = output_module(Concatenate(axis=1)([neg_dot, neg_neighbor]))
 
-        optimizer_instance = getattr(tf.keras.optimizers, self.optimizer.optimizer)(**self.optimizer.kwargs)
+        optimizer_instance = getattr(tf.keras.optimizers, optimizer.optimizer)(**optimizer.kwargs)
         loss_inst = Subtract(name="loss_layer")(inputs=[pos_output, neg_output])
 
         def cmn_loss(y_true, y_pred):
@@ -276,17 +285,17 @@ class CMNModel:
         self._model.compile(optimizer=optimizer_instance, loss=cmn_loss)
 
         init = tf.initialize_all_variables()
-        self.session.run(init)
+        sess.run(init)
 
         # pick user_embedding for aggregating
         LOGGER.info(f"_trainable_weights: {self._model.trainable_weights}")
         self._trainable_weights = {v.name.split("/")[0]: v for v in self._model.trainable_weights}
-        LOGGER.info(f"self._trainable_weights: {self._trainable_weights}")
+        LOGGER.info(f"_trainable_weights: {self._trainable_weights}")
 
         self._aggregate_weights = {"MemoryOutput": self._trainable_weights["MemoryOutput"]}
 
     @classmethod
-    def build_model(cls, user_num, item_num, embedding_dim, hops, neg_count, max_len
+    def build_model(cls, user_num, item_num, embedding_dim, hops, max_len
                     , l2_coef=0.01, loss="mse", optimizer="rmsprop"
                     , metrics="mse"):
         """
@@ -301,10 +310,11 @@ class CMNModel:
         :return: model object
         """
         model = cls(user_num=user_num, item_num=item_num, embedding_dim=embedding_dim
-                    , hops=hops, neg_count=neg_count, max_len=max_len
-                    , l2_coef=l2_coef, loss=loss, optimizer=optimizer, metrics=metrics)
-        model.build(user_num=user_num, item_num=item_num, embedding_dim=embedding_dim,
-                    loss=loss, optimizer=optimizer, metrics=metrics)
+                    , hops=hops, max_len=max_len, l2_coef=l2_coef
+                    , loss=loss, optimizer=optimizer, metrics=metrics)
+        model.build(user_num=user_num, item_num=item_num, embedding_dim=embedding_dim
+                    , hops=hops, max_len=max_len, l2_coef=l2_coef
+                    , loss=loss, optimizer=optimizer, metrics=metrics)
         return model
 
     @property

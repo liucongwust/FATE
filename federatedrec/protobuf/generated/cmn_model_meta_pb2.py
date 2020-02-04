@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='com.webank.ai.fate.core.mlmodel.buffer.cmn',
   syntax='proto3',
   serialized_options=_b('B\021CMNModelMetaProto'),
-  serialized_pb=_b('\n\x14\x63mn-model-meta.proto\x12*com.webank.ai.fate.core.mlmodel.buffer.cmn\",\n\tEarlyStop\x12\x12\n\nearly_stop\x18\x01 \x01(\t\x12\x0b\n\x03\x65ps\x18\x02 \x01(\x01\",\n\tOptimizer\x12\x11\n\toptimizer\x18\x01 \x01(\t\x12\x0c\n\x04\x61rgs\x18\x02 \x01(\t\"\xfd\x02\n\x0eHeteroCMNParam\x12\x18\n\x10secure_aggregate\x18\x01 \x01(\x08\x12\x1f\n\x17\x61ggregate_every_n_epoch\x18\x02 \x01(\x05\x12\x12\n\nbatch_size\x18\x03 \x01(\x05\x12\x10\n\x08max_iter\x18\x04 \x01(\x05\x12I\n\nearly_stop\x18\x05 \x01(\x0b\x32\x35.com.webank.ai.fate.core.mlmodel.buffer.cmn.EarlyStop\x12\x0f\n\x07metrics\x18\x06 \x03(\t\x12H\n\toptimizer\x18\x07 \x01(\x0b\x32\x35.com.webank.ai.fate.core.mlmodel.buffer.cmn.Optimizer\x12\x0c\n\x04loss\x18\x08 \x01(\t\x12\x11\n\tembed_dim\x18\t \x01(\x05\x12\x0c\n\x04hops\x18\n \x01(\x05\x12\x11\n\tneg_count\x18\x0b \x01(\x05\x12\x11\n\tgrad_clip\x18\x0c \x01(\x02\x12\x0f\n\x07l2_coef\x18\r \x01(\x02\"r\n\x0c\x43MNModelMeta\x12\x16\n\x0e\x61ggregate_iter\x18\x01 \x01(\x05\x12J\n\x06params\x18\x64 \x01(\x0b\x32:.com.webank.ai.fate.core.mlmodel.buffer.cmn.HeteroCMNParamB\x13\x42\x11\x43MNModelMetaProtob\x06proto3')
+  serialized_pb=_b('\n\x14\x63mn-model-meta.proto\x12*com.webank.ai.fate.core.mlmodel.buffer.cmn\",\n\tEarlyStop\x12\x12\n\nearly_stop\x18\x01 \x01(\t\x12\x0b\n\x03\x65ps\x18\x02 \x01(\x01\",\n\tOptimizer\x12\x11\n\toptimizer\x18\x01 \x01(\t\x12\x0c\n\x04\x61rgs\x18\x02 \x01(\t\"\xe8\x02\n\x0eHeteroCMNParam\x12\x18\n\x10secure_aggregate\x18\x01 \x01(\x08\x12\x1f\n\x17\x61ggregate_every_n_epoch\x18\x02 \x01(\x05\x12\x12\n\nbatch_size\x18\x03 \x01(\x05\x12\x10\n\x08max_iter\x18\x04 \x01(\x05\x12I\n\nearly_stop\x18\x05 \x01(\x0b\x32\x35.com.webank.ai.fate.core.mlmodel.buffer.cmn.EarlyStop\x12\x0f\n\x07metrics\x18\x06 \x03(\t\x12H\n\toptimizer\x18\x07 \x01(\x0b\x32\x35.com.webank.ai.fate.core.mlmodel.buffer.cmn.Optimizer\x12\x0c\n\x04loss\x18\x08 \x01(\t\x12\x11\n\tembed_dim\x18\t \x01(\x05\x12\x0c\n\x04hops\x18\n \x01(\x05\x12\x0f\n\x07max_len\x18\x0b \x01(\x05\x12\x0f\n\x07l2_coef\x18\x0c \x01(\x02\"r\n\x0c\x43MNModelMeta\x12\x16\n\x0e\x61ggregate_iter\x18\x01 \x01(\x05\x12J\n\x06params\x18\x64 \x01(\x0b\x32:.com.webank.ai.fate.core.mlmodel.buffer.cmn.HeteroCMNParamB\x13\x42\x11\x43MNModelMetaProtob\x06proto3')
 )
 
 
@@ -179,22 +179,15 @@ _HETEROCMNPARAM = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='neg_count', full_name='com.webank.ai.fate.core.mlmodel.buffer.cmn.HeteroCMNParam.neg_count', index=10,
+      name='max_len', full_name='com.webank.ai.fate.core.mlmodel.buffer.cmn.HeteroCMNParam.max_len', index=10,
       number=11, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='grad_clip', full_name='com.webank.ai.fate.core.mlmodel.buffer.cmn.HeteroCMNParam.grad_clip', index=11,
+      name='l2_coef', full_name='com.webank.ai.fate.core.mlmodel.buffer.cmn.HeteroCMNParam.l2_coef', index=11,
       number=12, type=2, cpp_type=6, label=1,
-      has_default_value=False, default_value=float(0),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      serialized_options=None, file=DESCRIPTOR),
-    _descriptor.FieldDescriptor(
-      name='l2_coef', full_name='com.webank.ai.fate.core.mlmodel.buffer.cmn.HeteroCMNParam.l2_coef', index=12,
-      number=13, type=2, cpp_type=6, label=1,
       has_default_value=False, default_value=float(0),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
@@ -212,7 +205,7 @@ _HETEROCMNPARAM = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=161,
-  serialized_end=542,
+  serialized_end=521,
 )
 
 
@@ -249,8 +242,8 @@ _CMNMODELMETA = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=544,
-  serialized_end=658,
+  serialized_start=523,
+  serialized_end=637,
 )
 
 _HETEROCMNPARAM.fields_by_name['early_stop'].message_type = _EARLYSTOP

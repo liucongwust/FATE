@@ -2,7 +2,11 @@ import tensorflow as tf
 from collections import namedtuple
 import numpy as np
 
+from tensorflow.keras.initializers import RandomUniform, RandomNormal
+from tensorflow.keras.regularizers import l2
+
 from arch.api.utils import log_utils
+
 
 LOGGER = log_utils.getLogger()
 
@@ -21,6 +25,10 @@ class MemoryMask(tf.keras.layers.Layer):
 
     def get_config(self):
         return super(MemoryMask, self).get_config()
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
     def call(self, inputs, mask_length, maxlen=None):
         """
@@ -74,6 +82,10 @@ class ApplyAttentionMemory(tf.keras.layers.Layer):
 
     def get_config(self):
         return super(ApplyAttentionMemory, self).get_config()
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
     def call(self, memory, output_memory, query, memory_mask=None, maxlen=None):
         """
@@ -144,9 +156,6 @@ class VariableLengthMemoryLayer(tf.keras.layers.Layer):
 
     def __init__(self, name='MemoryLayer', maxlen=32, hops=2, embed_size=10, **kwargs):
         super(VariableLengthMemoryLayer, self).__init__(name=name, **kwargs)
-        self.kernel_intializer = tf.keras.initializers.TruncatedNormal(stddev=0.01)
-        self.bias_initializer = tf.keras.initializers.TruncatedNormal(stddev=0.01)
-        self.regularizer = tf.keras.regularizers.l2(0.01)
         self.maxlen = maxlen
         self.hops = hops
         self.embed_size = embed_size
@@ -158,13 +167,13 @@ class VariableLengthMemoryLayer(tf.keras.layers.Layer):
         base_config['embed_size'] = self.embed_size
         return base_config
 
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+
     def call(self, inputs):
         """
-
-        :param kernel_intializer:
-        :param bias_initializer:
-        :param regularizer:
-        :param maxlen: int, the maximum length over the entire dataset
+        :param inputs:
         :return:
         """
         query, memory, output_memory, seq_length = inputs
@@ -188,10 +197,10 @@ class VariableLengthMemoryLayer(tf.keras.layers.Layer):
                 # Apply Mapping
                 hop_mapping = tf.keras.layers.Dense(units=self.embed_size
                                                     , use_bias=True
-                                                    , kernel_initializer=self.kernel_intializer
-                                                    , kernel_regularizer=self.regularizer
-                                                    , bias_initializer=self.bias_initializer
-                                                    , bias_regularizer=self.regularizer
+                                                    , kernel_initializer=RandomNormal(stddev=0.01)
+                                                    , kernel_regularizer=l2(0.01)
+                                                    , bias_initializer=RandomUniform(minval=0, maxval=1)
+                                                    , bias_regularizer=l2(0.01)
                                                     , name='HopMap%s' % hop_k)
                 with tf.name_scope('Map'):
                     # z = m_u + e_i
@@ -203,7 +212,7 @@ class VariableLengthMemoryLayer(tf.keras.layers.Layer):
             hop = ApplyAttentionMemory('AttentionHop%s' % hop_k)
 
             # [batch size, embedding size]
-            memory_hop = hop(memory, output_memory, query, seq_length, maxlen=self.maxlen)
+            memory_hop = hop(memory, output_memory, query, seq_length, self.maxlen)
             hop_outputs.append(memory_hop)
         LOGGER.info(f"embedding shapes, memory_hop in VariableLengthMemoryLayer: {type(hop_outputs[-1])}")
         LOGGER.info(f"embedding shapes, memory_hop in VariableLengthMemoryLayer: {hop_outputs[-1].output.shape}")

@@ -118,7 +118,7 @@ class HeteroCMNClient(HeteroCMNBase):
 
         self._model = CMNModel.build_model(user_num=self.user_num, item_num=self.item_num
                                            , embedding_dim=embedding_dim
-                                           , hops=hops, neg_count=neg_count, max_len=self.max_length
+                                           , hops=hops, max_len=self.max_length
                                            , l2_coef=l2_coef, loss=self.loss, optimizer=self.optimizer
                                            , metrics=self.metrics)
 
@@ -182,6 +182,7 @@ class HeteroCMNClient(HeteroCMNBase):
         param_pb.saved_model_bytes = self._model.export_model()
         param_pb.user_num = self.user_num
         param_pb.item_num = self.item_num
+        
         return param_pb
 
     def predict(self, data_inst):
@@ -202,7 +203,11 @@ class HeteroCMNClient(HeteroCMNBase):
             label_data = fate_session.parallelize(zip(keys, labels), include_key=True)
         else:
             # use CMNSequencePredictData in prediction procedure
-            data = self.data_converter.convert(data_inst, batch_size=self.batch_size, training=False)
+            data = self.data_converter.convert(data_inst, batch_size=self.batch_size,
+                                               neg_count=self.model_param.neg_count, max_length=self.model_param.max_len,
+                                               user_items=None, item_users=None,
+                                               training=False)
+
             label_data = data_inst.map(lambda k, v: (k, v.features.astype(int).tolist()[2]))
         LOGGER.info(f"label_data example: {label_data.take(10)}")
         LOGGER.info(f"data example: {data_inst.first()[1].features.astype(int)}")
@@ -223,6 +228,7 @@ class HeteroCMNClient(HeteroCMNBase):
         :param model_dict:
         :return:
         """
+        LOGGER.info("begin restore model")
         model_dict = list(model_dict["model"].values())[0]
         model_obj = model_dict.get(self.model_param_name)
         meta_obj = model_dict.get(self.model_meta_name)
@@ -231,8 +237,12 @@ class HeteroCMNClient(HeteroCMNBase):
         self.model_param.restore_from_pb(meta_obj.params)
         self._init_model(self.model_param)
         self.aggregator_iter = meta_obj.aggregate_iter
+        LOGGER.info(f"begin restore model, model obj: {model_obj} \n meta obj: {meta_obj}")
+
         self._model = CMNModel.restore_model(model_obj.saved_model_bytes, model_obj.user_num, model_obj.item_num,
-                                             self.model_param.init_param.embed_dim)
+                                             self.model_param.init_param.embed_dim, self.model_param.hops,
+                                             self.model_param.max_len, self.model_param.l2_coef, self.model_param.loss,
+                                             self.model_param.optimizer, self.model_param.metrics)
         self._model.set_user_num(model_obj.user_num)
         self._model.set_item_num(model_obj.item_num)
 

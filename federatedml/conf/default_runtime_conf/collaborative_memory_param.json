@@ -9,6 +9,8 @@
   "party_weight": 1,
   "batch_size": 320,
   "learning_rate": 0.01,
+  "neg_count":4,
+  "hops":2,
   "init_param": {
     "init_method": "random_normal",
     "embed_dim": 20

@@ -19,6 +19,9 @@ syntax = "proto3";
 package com.webank.ai.fate.core.mlmodel.buffer.cmn;
 option java_outer_classname = "CMNModelParamProto";
 
+message IDList{
+    repeated int32 ids=1;
+}
 message CMNModelParam {
     int32 aggregate_iter = 1;
     bytes saved_model_bytes = 2;
@@ -27,4 +30,6 @@ message CMNModelParam {
     repeated string header = 5;
     int32 user_num = 6;
     int32 item_num = 7;
+    map<int32, IDList> user_items = 8;
+    map<int32, IDList> item_users = 9;
 }
