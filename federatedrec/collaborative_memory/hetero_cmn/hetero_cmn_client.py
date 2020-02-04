@@ -101,6 +101,8 @@ class HeteroCMNClient(HeteroCMNBase):
 
         user_num = data.user_count
         item_num = data.item_count
+        self.user_items = data.user_items
+        self.item_users = data.item_users
 
         LOGGER.info(f'send user_num')
         self.send_user_num(user_num)
@@ -112,7 +114,6 @@ class HeteroCMNClient(HeteroCMNBase):
         self.max_length = data.max_length
         embedding_dim = self.model_param.init_param.embed_dim
         hops = self.model_param.hops
-        neg_count = self.model_param.neg_count
         self.max_length = data.max_length
         l2_coef = self.model_param.l2_coef
 
@@ -182,7 +183,17 @@ class HeteroCMNClient(HeteroCMNBase):
         param_pb.saved_model_bytes = self._model.export_model()
         param_pb.user_num = self.user_num
         param_pb.item_num = self.item_num
-        
+        for userID, itemIDs in self.user_items.items():
+            id_list = []
+            for itemid in itemIDs:
+                id_list.append(itemid)
+        param_pb.user_items[userID].ids.extend(id_list)
+
+        for itemId, userIDs in self.item_users.items():
+            id_list = []
+            for userid in userIDs:
+                id_list.append(userid)
+            param_pb.item_users[itemId].ids.extend(id_list)
         return param_pb
 
     def predict(self, data_inst):
@@ -205,7 +216,7 @@ class HeteroCMNClient(HeteroCMNBase):
             # use CMNSequencePredictData in prediction procedure
             data = self.data_converter.convert(data_inst, batch_size=self.batch_size,
                                                neg_count=self.model_param.neg_count, max_length=self.model_param.max_len,
-                                               user_items=None, item_users=None,
+                                               user_items=self.user_items, item_users=self.item_users,
                                                training=False)
 
             label_data = data_inst.map(lambda k, v: (k, v.features.astype(int).tolist()[2]))
@@ -237,7 +248,16 @@ class HeteroCMNClient(HeteroCMNBase):
         self.model_param.restore_from_pb(meta_obj.params)
         self._init_model(self.model_param)
         self.aggregator_iter = meta_obj.aggregate_iter
-        LOGGER.info(f"begin restore model, model obj: {model_obj} \n meta obj: {meta_obj}")
+        user_items_obj = model_obj.user_items
+        item_users_obj = model_obj.item_users
+        self.user_items = {}
+        self.item_users = {}
+        for userid in user_items_obj.keys():
+            item_ids = user_items_obj[userid].ids
+            self.user_items[userid] = item_ids
+        for itemid in item_users_obj.keys():
+            user_ids = item_users_obj[itemid].ids
+            self.item_users[itemid] = user_ids
 
         self._model = CMNModel.restore_model(model_obj.saved_model_bytes, model_obj.user_num, model_obj.item_num,
                                              self.model_param.init_param.embed_dim, self.model_param.hops,
