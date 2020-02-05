@@ -206,18 +206,18 @@ class HeteroCMNClient(HeteroCMNBase):
         LOGGER.info(f"current flowid: {self.flowid}")
         if self.flowid == 'validate':
             # use CMNSequenceData in evaluation procedure (after training procedure)
-            data = self.data_converter.convert(data_inst, batch_size=self.batch_size,
-                                               neg_count=self.model_param.neg_count
+            data = self.data_converter.convert(data_inst, batch_size=self.batch_size
+                                               , neg_count=self.model_param.neg_count
                                                , training=True, flow_id=self.flowid)
             keys = data.get_keys()
             labels = data.get_validate_labels()
             label_data = fate_session.parallelize(zip(keys, labels), include_key=True)
         else:
             # use CMNSequencePredictData in prediction procedure
-            data = self.data_converter.convert(data_inst, batch_size=self.batch_size,
-                                               neg_count=self.model_param.neg_count, max_length=self.model_param.max_len,
-                                               user_items=self.user_items, item_users=self.item_users,
-                                               training=False)
+            data = self.data_converter.convert(data_inst, batch_size=self.batch_size
+                                               , neg_count=self.model_param.neg_count, max_length=self.model_param.max_len
+                                               , user_items=self.user_items, item_users=self.item_users
+                                               , training=False)
 
             label_data = data_inst.map(lambda k, v: (k, v.features.astype(int).tolist()[2]))
         LOGGER.info(f"label_data example: {label_data.take(10)}")

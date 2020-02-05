@@ -156,6 +156,7 @@ class CMNModel:
 
             keras_model = tf.keras.experimental.load_from_saved_model(
                 saved_model_path=tmp_path, custom_objects={"VariableLengthMemoryLayer": VariableLengthMemoryLayer})
+
         model = cls(user_num=user_num, item_num=item_num, embedding_dim=embedding_dim
                     , hops=hops, max_len=max_len, l2_coef=l2_coef
                     , loss=loss, optimizer=optimizer, metrics=metrics)
@@ -174,7 +175,6 @@ class CMNModel:
                 self._predict_model, saved_model_path=tmp_path)
 
             model_bytes = zip_dir_as_bytes(tmp_path)
-            os.system(f"tree {tmp_path} || true")
 
         return model_bytes
 

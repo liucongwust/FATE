@@ -25,6 +25,7 @@ import tensorflow as tf
 from arch.api.utils import log_utils
 LOGGER = log_utils.getLogger()
 
+
 class DataConverter(object):
     def convert(self, data, *args, **kwargs):
         pass
@@ -150,6 +151,10 @@ class CMNSequenceData(tf.keras.utils.Sequence):
         return n
 
     def transfer_data(self):
+        """
+        generate training data and evaluation data in training procedure
+        :return:
+        """
         size = self.size * self.neg_count if self.neg_count > 0 else self.batch_size
         users = np.zeros((size,), dtype=np.uint32)
         items = np.zeros((size,), dtype=np.uint32)
@@ -205,9 +210,9 @@ class CMNSequenceData(tf.keras.utils.Sequence):
                 else:
                     # Length defaults to 1
                     neg_length[idx] = 1
-                    neg_neighbor[idx, 0] = neg_item_idx
+                    neg_neighbor[idx, 0] = user_idx
                     validate_length[valid_idx] = 1
-                    validate_neighbor[valid_idx, 0] = neg_item_idx
+                    validate_neighbor[valid_idx, 0] = user_idx
 
                 idx += 1
                 valid_idx += 1
@@ -334,13 +339,17 @@ class CMNSequencePredictData(tf.keras.utils.Sequence):
             else:
                 # Length defaults to 1
                 pos_length[idx] = 1
-                pos_neighbor[idx, 0] = item_idx
+                pos_neighbor[idx, 0] = user_idx
 
             idx += 1
-        self.users = users[:idx]
-        self.items = items[:idx]
-        self.pos_length = pos_length
-        self.pos_neighbor = pos_neighbor
+
+        # shuffle data
+        shuffle_idx = [i for i in range(idx)]
+        random.shuffle(shuffle_idx)
+        self.users = users[shuffle_idx]
+        self.items = items[shuffle_idx]
+        self.pos_length = pos_length[shuffle_idx]
+        self.pos_neighbor = pos_neighbor[shuffle_idx, :]
 
     def __getitem__(self, index):
         """Gets batch at position `index`.
