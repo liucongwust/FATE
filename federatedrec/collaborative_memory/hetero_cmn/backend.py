@@ -282,7 +282,7 @@ class CMNModel:
                                     outputs=pos_output)
         LOGGER.info(f"model output names {self._model.output_names}")
 
-        self._model.compile(optimizer=optimizer_instance, loss=cmn_loss)
+        self._model.compile(optimizer=optimizer_instance, loss=cmn_loss, metrics=metrics)
 
         init = tf.initialize_all_variables()
         sess.run(init)

@@ -39,6 +39,11 @@ class GMFInitParam(InitParam):
         self.init_method = init_method
 
     def check(self):
+        if type(self.embed_dim).__name__ not in ["int"] or self.embed_dim < 0:
+            raise ValueError(
+                "GMFInitParam's embed_dim {} not supported, should be 'int'"
+                "and greater than 0".format(
+                    self.embed_dim))
         return True
 
 
@@ -143,6 +148,14 @@ class GMFParam(BaseParam):
             raise ValueError(
                 "general_mf's optimizer['learning_rate'] {} not supported, should be float type and greater "
                 "than 0".format(self.optimizer.kwargs['learning_rate']))
+
+        if 'decay' in self.optimizer.__dict__["kwargs"] and \
+                (type(self.optimizer.kwargs['decay']).__name__ != "float" or (
+                isinstance(self.optimizer.kwargs['decay'], float)) and
+                 self.optimizer.kwargs['decay'] < 0):
+            raise ValueError(
+                "general_mf's optimizer['decay'] {} not supported, should be float type and greater "
+                "than 0".format(self.optimizer.kwargs['decay']))
 
         self.init_param.check()
 

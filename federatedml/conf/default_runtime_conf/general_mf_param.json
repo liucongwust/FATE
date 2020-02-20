@@ -1,5 +1,4 @@
 {
-  "optimizer": "sgd",
   "max_iter": 100,
   "converge_func": "diff",
   "batch_size": 320,

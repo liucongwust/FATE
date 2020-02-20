@@ -1,31 +1,29 @@
 {
-  "penalty": "L2",
-  "optimizer": "sgd",
-  "eps": 1e-05,
-  "alpha": 0.01,
+  "optimizer": {
+    "optimizer": "RMSprop",
+    "learning_rate": 0.05,
+    "decay": 0.9,
+    "momentum": 0.9
+  },
   "max_iter": 100,
   "converge_func": "diff",
-  "re_encrypt_batches": 2,
   "party_weight": 1,
   "batch_size": 320,
   "learning_rate": 0.01,
   "neg_count":4,
   "hops":2,
+  "max_len":20,
+  "l2_coef": 0.01,
   "init_param": {
     "init_method": "random_normal",
     "embed_dim": 20
   },
   "predict_param": {
-    "with_proba": true,
     "threshold": 0.5
   },
   "encrypt_param": {
     "method": "Paillier",
     "key_length": 1024
-  },
-  "encrypted_mode_calculator_param": {
-    "mode": "strict",
-    "re_encrypted_rate": 1
   },
   "need_run": true,
   "cv_param": {
