@@ -1,0 +1,34 @@
+{
+  "data": [
+    {
+      "role": "guest_0",
+      "file": "examples/data/citeulike_a_guest.csv",
+      "table_name": "hetero_citeulike_train_guest",
+      "namespace": "hetero_guest_citeulike",
+      "head": 1,
+      "partition": 10
+    },
+    {
+      "role": "host_0",
+      "file": "examples/data/citeulike_a_host.csv",
+      "table_name": "hetero_citeulike_train_host",
+      "namespace": "hetero_host_citeulike",
+      "head": 1,
+      "partition": 10
+    }
+  ],
+  "tasks": {
+    "ncf_train": {
+      "conf": "test_hetero_ncf.json",
+      "dsl": "test_hetero_ncf_train.dsl"
+    },
+    "ncf_train_eval": {
+      "conf": "test_hetero_ncf_train_then_predict.json",
+      "dsl": "test_hetero_ncf_train_then_predict.dsl"
+    },
+    "ncf-predict": {
+      "conf": "test_ncf_predict.json",
+      "deps": "ncf_train_eval"
+    }
+  }
+}
