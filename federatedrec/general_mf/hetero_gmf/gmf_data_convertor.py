@@ -181,7 +181,7 @@ class GMFSequenceData(tf.keras.utils.Sequence):
         # shuffle data
         self.size = idx
         shuffle_idx = [i for i in range(idx)]
-        random.shuffle(shuffle_idx)
+        # random.shuffle(shuffle_idx)
         self.users = users[shuffle_idx]
         self.items = items[shuffle_idx]
         self.neg_items = neg_items[shuffle_idx]
@@ -189,7 +189,7 @@ class GMFSequenceData(tf.keras.utils.Sequence):
         self.y_0 = self.y_0[shuffle_idx]
 
         valid_shuffle_idx = [i for i in range(valid_idx)]
-        random.shuffle(valid_shuffle_idx)
+        # random.shuffle(valid_shuffle_idx)
         self.validate_users = validate_users[valid_shuffle_idx]
         self.validate_items = validate_items[valid_shuffle_idx]
         self.validate_y = validate_y[valid_shuffle_idx]
@@ -228,7 +228,8 @@ class GMFSequenceData(tf.keras.utils.Sequence):
         return self._keys
 
     def get_validate_labels(self):
-        return self.validate_y.astype(int).tolist()
+        return zip(self.validate_y.astype(int).tolist(), self.validate_users.astype(int).tolist(), self.validate_items.astype(int).tolist())
+        # return self.validate_y.astype(int).tolist()
 
 
 class GMFSequencePredictData(tf.keras.utils.Sequence):

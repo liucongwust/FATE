@@ -21,7 +21,7 @@
 					"eval_data":[
 						{
 							"namespace": "hetero_guest_citeulike",
-							"name": "hetero_citeulike_evaluation"
+							"name": "hetero_citeulike_train_guest"
 						}
 					]
 				}
@@ -33,7 +33,7 @@
 					"eval_data": [
 						{
 							"namespace": "hetero_host_citeulike",
-								"name": "hetero_citeulike_train_host"
+							"name": "hetero_citeulike_train_host"
 						}
 					]
 				}
