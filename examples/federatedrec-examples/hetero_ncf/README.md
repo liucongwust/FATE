@@ -1,14 +1,10 @@
 ## Hetero Neural Collaborative Filtering Configuration Usage Guide.
 
-This section introduces the dsl and conf for usage of federated GMF(generalized matrix factorization model).
+This section introduces the dsl and conf for usage of federated NCF(Neural Collaborative Filtering model).
 
-#### Training Task.
-dsl: test_hetero_ncf_train.dsl
-runtime_config : test_hetero_ncf.json
-  
 #### Training and Evaluation Task.
-dsl: test_hetero_ncf_train_then_predict.dsl
-runtime_config : test_hetero_ncf_train_then_predict.json
+dsl: test_hetero_ncf_train_then_predict_dsl.json
+runtime_config : test_hetero_ncf_train_then_predict_conf.json
 
 #### test prediction
 runtime_config: test_ncf_predict.json

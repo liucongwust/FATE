@@ -50,7 +50,8 @@ class NCFParam(BaseParam):
 
     Parameters
     ----------
-    optimizer : str, 'SGD', 'RMSprop', 'Adam',  or 'Adagrad', default: 'SGD'
+    optimizer : dict, support optimizers in Keras such as  'SGD', 'RMSprop', 'Adam',  or 'Adagrad',
+        default: 'SGD' with learning rate 0.01
         Optimize method
 
     batch_size : int, default: -1
@@ -62,7 +63,8 @@ class NCFParam(BaseParam):
     max_iter : int, default: 100
         The maximum iteration for training.
 
-    early_stop : str, 'diff', 'weight_diff' or 'abs', default: 'diff'
+    early_stop : dict. early_stop includes 'diff', 'weight_diff' and 'abs',
+        default: {'early_stop':'diff', 'eps': 1e-5}
         Method used to judge converge or not.
             a)	diff： Use difference of loss between two iterations to judge whether converge.
             b)  weight_diff: Use difference between weights of two consecutive iterations
@@ -87,8 +89,8 @@ class NCFParam(BaseParam):
     def __init__(self,
                  secure_aggregate: bool = True,
                  aggregate_every_n_epoch: int = 1,
-                 early_stop: typing.Union[str, dict, SimpleNamespace] = "diff",
-                 optimizer: typing.Union[str, dict, SimpleNamespace] = 'SGD',
+                 early_stop: typing.Union[str, dict, SimpleNamespace] = {"early_stop": "diff"},
+                 optimizer: typing.Union[str, dict, SimpleNamespace] = {"optimizer": "SGD", "learning_rate": 0.01},
                  batch_size=-1,
                  init_param=NCFInitParam(),
                  max_iter=100,
@@ -159,17 +161,13 @@ class NCFParam(BaseParam):
     def _parse_early_stop(self, param):
         """
            Examples:
-
-               1. "early_stop": "diff"
-               2. "early_stop": {
+                "early_stop": {
                        "early_stop": "diff",
                        "eps": 0.0001
                    }
         """
         default_eps = 0.0001
-        if isinstance(param, str):
-            return SimpleNamespace(converge_func=param, eps=default_eps)
-        elif isinstance(param, dict):
+        if isinstance(param, dict):
             early_stop = param.get("early_stop", None)
             eps = param.get("eps", default_eps)
             if not early_stop:
@@ -181,12 +179,10 @@ class NCFParam(BaseParam):
     def _parse_optimizer(self, param):
         """
         Examples:
-
-            1. "optimize": "SGD"
-            2. "optimize": {
+            "optimize": {
                     "optimizer": "SGD",
                     "learning_rate": 0.05
-                }
+            }
         """
         kwargs = {}
         if isinstance(param, str):
@@ -219,12 +215,12 @@ class NCFParam(BaseParam):
     def _parse_mlp_params(self, param):
         """
         Examples:
-            1. "mlp_params": {
+            "mlp_params": {
                 "embed_dim": 32,
                 "num_layer": 3,
                 "layer_dim": [32, 32, 32],
                 "reg_layers": [0.01, 0.01, 0.01]
-		        }
+                }
         """
         kwargs = {}
         if isinstance(param, dict):
@@ -244,9 +240,10 @@ class HeteroNCFParam(NCFParam):
 
     """
 
-    def __init__(self, optimizer='SGD',
+    def __init__(self, optimizer={"optimizer": "SGD", "learning_rate": 0.01},
+                 early_stop={"early_stop": "diff"},
                  batch_size=-1, init_param=NCFInitParam(),
-                 max_iter=100, early_stop='diff',
+                 max_iter=100,
                  predict_param=PredictParam(), cv_param=CrossValidationParam(),
                  aggregate_iters=1, mlp_params={}
                  ):

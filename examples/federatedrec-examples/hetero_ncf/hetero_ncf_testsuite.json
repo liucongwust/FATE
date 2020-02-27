@@ -18,13 +18,9 @@
     }
   ],
   "tasks": {
-    "ncf_train": {
-      "conf": "test_hetero_ncf.json",
-      "dsl": "test_hetero_ncf_train.dsl"
-    },
     "ncf_train_eval": {
-      "conf": "test_hetero_ncf_train_then_predict.json",
-      "dsl": "test_hetero_ncf_train_then_predict.dsl"
+      "conf": "test_hetero_ncf_train_then_predict_conf.json",
+      "dsl": "test_hetero_ncf_train_then_predict_dsl.json"
     },
     "ncf-predict": {
       "conf": "test_ncf_predict.json",

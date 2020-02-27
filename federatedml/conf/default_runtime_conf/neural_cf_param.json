@@ -5,20 +5,14 @@
     "decay": 0.9,
     "momentum": 0.9
   },
-  "init_param": {
-    "init_method": "random_uniform",
-    "embed_dim": 10
-  },
   "mlp_params": {
     "embed_dim": 32,
     "num_layer": 3,
-    "layer_dim": [64, 32, 16, 8],
-    "reg_layers": [0, 0, 0, 0]
+    "layer_dim": [32, 32, 32],
+    "reg_layers": [0, 0, 0]
   },
-  "max_iter": 100,
-  "converge_func": "diff",
+  "max_iter": 50,
   "batch_size": 320,
-  "learning_rate": 0.01,
   "init_param": {
     "init_method": "random_normal",
     "embed_dim": 20
@@ -28,7 +22,6 @@
     "eps": 1e-05
   },
   "predict_param": {
-    "with_proba": true,
     "threshold": 0.5
   },
   "encrypt_param": {
