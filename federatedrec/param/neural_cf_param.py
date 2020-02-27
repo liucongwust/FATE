@@ -21,12 +21,15 @@ import json
 import typing
 from types import SimpleNamespace
 
+from arch.api.utils import log_utils
 from federatedml.param.base_param import BaseParam
 from federatedml.param.cross_validation_param import CrossValidationParam
 from federatedml.param.init_model_param import InitParam
 from federatedml.param.predict_param import PredictParam
 from federatedml.util import consts
 from federatedml.protobuf.generated import ncf_model_meta_pb2
+
+LOGGER = log_utils.getLogger()
 
 
 class NCFInitParam(InitParam):
@@ -123,6 +126,7 @@ class NCFParam(BaseParam):
         self.early_stop = self._parse_early_stop(self.early_stop)
         self.optimizer = self._parse_optimizer(self.optimizer)
         self.metrics = self._parse_metrics(self.metrics)
+        LOGGER.info(f"mlp_params: {self.mlp_params}")
         self.mlp_params = self._parse_mlp_params(self.mlp_params)
 
         if self.batch_size != -1:
@@ -224,7 +228,7 @@ class NCFParam(BaseParam):
         """
         kwargs = {}
         if isinstance(param, dict):
-            kwargs = {k: v for k, v in param.items() if k != "optimizer"}
+            kwargs = {k: v for k, v in param.items()}
             return kwargs
         else:
             raise ValueError(f"invalid type for optimize: {type(param)}")
@@ -295,7 +299,8 @@ class HeteroNCFParam(NCFParam):
         self.early_stop = self._parse_early_stop(dict(early_stop=pb.early_stop.early_stop, eps=pb.early_stop.eps))
         self.metrics = list(pb.metrics)
         self.optimizer = self._parse_optimizer(dict(optimizer=pb.optimizer.optimizer, **json.loads(pb.optimizer.args)))
-        self.mlp_params = self._parse_mlp_params(**json.loads(pb.mlp_params))
+        LOGGER.info(f"mlp_params from pb: {json.loads(pb.mlp_params)}")
+        self.mlp_params = self._parse_mlp_params(json.loads(pb.mlp_params))
         self.loss = pb.loss
         self.init_param = NCFInitParam(embed_dim=pb.embed_dim)
         return pb

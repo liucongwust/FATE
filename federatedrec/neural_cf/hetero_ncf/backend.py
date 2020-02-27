@@ -22,13 +22,14 @@ import copy
 import typing
 import zipfile
 import tempfile
+import traceback
 
 import tensorflow as tf
 from tensorflow.keras.losses import MSE as MSE
 from tensorflow.keras import Model
 from tensorflow.python.keras.backend import set_session
 from tensorflow.keras.initializers import RandomNormal
-from tensorflow.keras.layers import Input, Embedding, Lambda, Dense, Multiply, Concatenate
+from tensorflow.keras.layers import Input, Embedding, Lambda, Dense, Multiply, Concatenate, Flatten
 from tensorflow_core.python.keras.regularizers import l2
 
 from arch.api.utils import log_utils
@@ -168,7 +169,7 @@ class NCFModel:
         with tempfile.TemporaryDirectory() as tmp_path:
             LOGGER.info(f"tmp_path: {tmp_path}")
             tf.keras.experimental.export_saved_model(
-                self._model, saved_model_path=tmp_path)
+                    self._model, saved_model_path=tmp_path)
 
             model_bytes = zip_dir_as_bytes(tmp_path)
 
@@ -189,10 +190,8 @@ class NCFModel:
         users_input = Input(shape=(1,), dtype='int32', name='user_input')
         items_input = Input(shape=(1,), dtype='int32', name='item_input')
 
-        users = Lambda(
-            lambda x: tf.squeeze(x, 1))(users_input)
         items = Lambda(
-            lambda x: tf.strings.to_hash_bucket(tf.strings.as_string(tf.squeeze(x, 1)), self.item_num))(items_input)
+            lambda x: tf.strings.to_hash_bucket(tf.strings.as_string(x), item_num))(items_input)
 
         mf_user_embed_layer = Embedding(user_num, embedding_dim,
                                         embeddings_initializer=RandomNormal(stddev=0.1),
@@ -210,11 +209,15 @@ class NCFModel:
                                          embeddings_initializer=RandomNormal(stddev=0.1),
                                          name='mlp_item_embedding')
 
-        mf_user_embed = mf_user_embed_layer(users)
+        mf_user_embed = mf_user_embed_layer(users_input)
+        mf_user_embed = Flatten()(mf_user_embed)
         mf_item_embed = mf_item_embed_layer(items)
+        mf_item_embed = Flatten()(mf_item_embed)
 
-        mlp_user_embed = mlp_user_embed_layer(users)
+        mlp_user_embed = mlp_user_embed_layer(users_input)
+        mlp_user_embed = Flatten()(mlp_user_embed)
         mlp_item_embed = mlp_item_embed_layer(items)
+        mlp_item_embed = Flatten()(mlp_item_embed)
 
         mf_vector = Multiply()([mf_user_embed, mf_item_embed])
         mlp_vector = Concatenate(axis=-1)([mlp_user_embed, mlp_item_embed])
