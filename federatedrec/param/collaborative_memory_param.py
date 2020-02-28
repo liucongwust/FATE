@@ -48,7 +48,8 @@ class CMNParam(BaseParam):
     """
     Parameters
     ----------
-    optimizer : str, 'SGD', 'RMSprop', 'Adam',  or 'Adagrad', default: 'SGD'
+    optimizer : dict, support optimizers in Keras such as  'SGD', 'RMSprop', 'Adam',  or 'Adagrad',
+        default: 'SGD' with learning rate 0.01
         Optimize method
 
     batch_size : int, default: -1
@@ -60,7 +61,8 @@ class CMNParam(BaseParam):
     max_iter : int, default: 100
         The maximum iteration for training.
 
-    early_stop : str, 'diff', 'weight_diff' or 'abs', default: 'diff'
+    early_stop : dict. early_stop includes 'diff', 'weight_diff' and 'abs',
+        default: {'early_stop':'diff', 'eps': 1e-5}
         Method used to judge converge or not.
             a)	diff： Use difference of loss between two iterations to judge whether converge.
             b)  weight_diff: Use difference between weights of two consecutive iterations
@@ -81,8 +83,8 @@ class CMNParam(BaseParam):
     def __init__(self,
                  secure_aggregate: bool = True,
                  aggregate_every_n_epoch: int = 1,
-                 early_stop: typing.Union[str, dict, SimpleNamespace] = "diff",
-                 optimizer: typing.Union[str, dict, SimpleNamespace] = 'SGD',
+                 early_stop: typing.Union[str, dict, SimpleNamespace] = {"early_stop": "diff"},
+                 optimizer: typing.Union[str, dict, SimpleNamespace] = {"optimizer": "SGD", "learning_rate": 0.01},
                  batch_size=-1,
                  init_param=CMNInitParam(),
                  max_iter=100,
@@ -179,17 +181,13 @@ class CMNParam(BaseParam):
     def _parse_early_stop(self, param):
         """
            Examples:
-
-               1. "early_stop": "diff"
-               2. "early_stop": {
+                "early_stop": {
                        "early_stop": "diff",
                        "eps": 0.0001
                    }
         """
         default_eps = 0.0001
-        if isinstance(param, str):
-            return SimpleNamespace(converge_func=param, eps=default_eps)
-        elif isinstance(param, dict):
+        if isinstance(param, dict):
             early_stop = param.get("early_stop", None)
             eps = param.get("eps", default_eps)
             if not early_stop:
@@ -201,12 +199,10 @@ class CMNParam(BaseParam):
     def _parse_optimizer(self, param):
         """
         Examples:
-
-            1. "optimize": "SGD"
-            2. "optimize": {
+            "optimize": {
                     "optimizer": "SGD",
                     "learning_rate": 0.05
-                }
+            }
         """
         kwargs = {}
         if isinstance(param, str):
@@ -246,12 +242,11 @@ class HeteroCMNParam(CMNParam):
 
     """
 
-    def __init__(self, penalty='L2',
-                 tol=1e-5, alpha=1.0, optimizer='sgd',
-                 batch_size=-1, learning_rate=0.01, init_param=CMNInitParam(),
-                 max_iter=100, early_stop='diff',
+    def __init__(self, optimizer={"optimizer": "SGD", "learning_rate": 0.01},
+                 early_stop={"early_stop": "diff"},
+                 batch_size=-1, init_param=CMNInitParam(),
+                 max_iter=100,
                  predict_param=PredictParam(), cv_param=CrossValidationParam(),
-                 decay=1, decay_sqrt=True,
                  aggregate_iters=1, validation_freqs=None,
                  hops=2, max_len=4, l2_coef=0.1, neg_count=10,
                  secure_aggregate: bool = True,

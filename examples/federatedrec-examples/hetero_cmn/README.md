@@ -1,7 +1,8 @@
 ## Homo Neural Network Configuration Usage Guide.
 
 This section introduces the dsl and conf for usage of federated GMF(generalized matrix factorization model).
-
+#### Training Task.
+  
 #### Training and Evaluation Task.
 dsl: test_hetero_cmn_train_then_predict.dsl
 runtime_config : test_hetero_cmn_train_then_predict.json

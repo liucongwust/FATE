@@ -6,10 +6,7 @@
     "momentum": 0.9
   },
   "max_iter": 100,
-  "converge_func": "diff",
-  "party_weight": 1,
   "batch_size": 320,
-  "learning_rate": 0.01,
   "neg_count":4,
   "hops":2,
   "max_len":20,
