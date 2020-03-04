@@ -129,14 +129,14 @@ class HeteroCDLClient(HeteroCDLBase):
         return {self.model_meta_name: meta, self.model_param_name: param}
 
     def _get_meta(self):
-        from federatedrec.protobuf.generated import cdl_model_meta_pb2
+        from federatedml.protobuf.generated import cdl_model_meta_pb2
         meta_pb = cdl_model_meta_pb2.CDLModelMeta()
         meta_pb.params.CopyFrom(self.model_param.generate_pb())
         meta_pb.aggregate_iter = self.aggregator_iter
         return meta_pb
 
     def _get_param(self):
-        from federatedrec.protobuf.generated import cdl_model_param_pb2
+        from federatedml.protobuf.generated import cdl_model_param_pb2
         param_pb = cdl_model_param_pb2.CDLModelParam()
         param_pb.saved_model_bytes = self._model.export_model()
         param_pb.user_ids.extend(self._model.user_ids)
@@ -153,9 +153,7 @@ class HeteroCDLClient(HeteroCDLBase):
 
         data = self.data_converter.convert(data_inst, self._model.user_ids, self._model.item_ids, None,
                                            self.batch_size)
-        LOGGER.info(f"data_inst count: {data_inst.count()}")
-        label_data = data_inst.map(lambda k, v: (k, v.features.get_data(2)))
-        LOGGER.info(f"label_data count: {label_data.count()}")
+        label_data = data_inst.map(lambda k, v: (k, float(v.features.get_data(2))))
         predict = self._model.predict(data)
         threshold = self.params.predict_param.threshold
 
