@@ -26,7 +26,7 @@ from federatedml.param.cross_validation_param import CrossValidationParam
 from federatedml.param.init_model_param import InitParam
 from federatedml.param.predict_param import PredictParam
 from federatedml.util import consts
-from federatedrec.protobuf.generated import cmn_model_meta_pb2
+from federatedml.protobuf.generated import cmn_model_meta_pb2
 
 
 class CMNInitParam(InitParam):

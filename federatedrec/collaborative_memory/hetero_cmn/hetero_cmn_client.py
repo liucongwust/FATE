@@ -165,7 +165,7 @@ class HeteroCMNClient(HeteroCMNBase):
         get meta data for saving model
         :return:
         """
-        from federatedrec.protobuf.generated import cmn_model_meta_pb2
+        from federatedml.protobuf.generated import cmn_model_meta_pb2
         LOGGER.info(f"_get_meta")
         meta_pb = cmn_model_meta_pb2.CMNModelMeta()
         meta_pb.params.CopyFrom(self.model_param.generate_pb())
@@ -177,7 +177,7 @@ class HeteroCMNClient(HeteroCMNBase):
         get model param for saving model
         :return:
         """
-        from federatedrec.protobuf.generated import cmn_model_param_pb2
+        from federatedml.protobuf.generated import cmn_model_param_pb2
         LOGGER.info(f"_get_param")
         param_pb = cmn_model_param_pb2.CMNModelParam()
         param_pb.saved_model_bytes = self._model.export_model()
