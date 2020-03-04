@@ -1,0 +1,8 @@
+{
+	"work_mode":0,
+	"file":"examples/data/toydata_mf_b_tuple.csv",
+	"table_name":"hetero_mf_b_t",
+	"namespace":"hetero_guest_mf_t",
+	"head": 1,
+	"partition": 10
+}

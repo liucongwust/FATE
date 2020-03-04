@@ -1,0 +1,113 @@
+{
+	"initiator": {
+		"role": "guest",
+		"party_id": 10000
+	},
+	"job_parameters": {
+		"work_mode": 0
+	},
+	"role": {
+		"guest": [
+			10000
+		],
+		"host": [
+			10000
+		],
+		"arbiter": [
+			10000
+		]
+	},
+	"role_parameters": {
+		"guest": {
+			"args": {
+				"data": {
+					"data0": [
+						{
+							"name": "hetero_mf_b_t",
+							"namespace": "hetero_guest_mf_t"
+						}
+					],
+					"data1":[
+						{
+							"name": "hetero_mf_b_itemfea",
+							"namespace": "hetero_guest_mf_itemfea"
+						}
+					]
+				}
+			},
+			"dataio_0": {
+				"with_label": [false],
+				"label_idx": [0],
+				"label_type": ["int"],
+				"output_format": ["sparse"],
+				"missing_fill": [true],
+				"outlier_replace": [true],
+				"data_type": ["str"]
+			},
+			"dataio_1": {
+				"with_label": [false],
+				"label_idx": [0],
+				"label_type": ["int"],
+				"output_format": ["dense"],
+				"missing_fill": [true],
+				"outlier_replace": [true]
+			},
+			"evaluation_0": {
+			"eval_type": [
+				"regression"
+			]
+		}
+		},
+		"host": {
+			"args": {
+				"data": {
+					"data0": [
+						{
+							"name": "hetero_mf_a_t",
+							"namespace": "hetero_host_mf_t"
+						}
+					],
+					"data1": [
+						{
+							"name": "hetero_mf_a_itemfea",
+							"namespace": "hetero_host_mf_itemfea"
+						}
+					]
+				}
+			},
+			"dataio_0": {
+				"with_label": [false],
+				"output_format": ["sparse"],
+				"outlier_replace": [true],
+				"data_type": ["str"]
+			},
+			"dataio_1": {
+				"with_label": [false],
+				"label_idx": [0],
+				"label_type": ["int"],
+				"output_format": ["dense"],
+				"missing_fill": [true],
+				"outlier_replace": [true]
+			},
+			"evaluation_0": {
+		"need_run": [
+			false
+		]
+		}
+	}
+	},
+	"algorithm_parameters": {
+		"hetero_cdl_0": {
+			"optimizer": {
+			"optimizer": "Adam",
+			"learning_rate": 0.05
+		},
+			"max_iter": 10,
+			"batch_size": -1,
+			"init_param": {
+				"init_method": "random_normal",
+				"embed_dim": 10
+			}
+		}
+	}
+}

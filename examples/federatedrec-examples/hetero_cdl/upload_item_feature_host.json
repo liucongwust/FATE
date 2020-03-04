@@ -1,0 +1,8 @@
+{
+	"work_mode":0,
+	"file":"examples/data/toydata_item_fea_a.csv",
+	"table_name":"hetero_mf_a_itemfea",
+	"namespace":"hetero_host_mf_itemfea",
+	"head": 1,
+	"partition": 10
+}

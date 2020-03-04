@@ -1,0 +1,16 @@
+{
+  "module_path": "federatedrec/collaborative_deeplearning/hetero_cdl",
+  "default_runtime_conf": "collaborative_deeplearning_param.json",
+  "param_class": "federatedrec/param/collaborative_deeplearning_param.py/HeteroCDLParam",
+  "role": {
+    "guest": {
+      "program": "hetero_cdl_client.py/HeteroCDLGuest"
+    },
+    "host": {
+      "program": "hetero_cdl_client.py/HeteroCDLHost"
+    },
+    "arbiter": {
+      "program": "hetero_cdl_arbiter.py/HeteroCDLArbiter"
+    }
+  }
+}

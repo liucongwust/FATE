@@ -1,0 +1,46 @@
+{
+  "data": [
+    {
+      "role": "guest_0",
+      "file":"examples/data/toydata_mf_b_tuple.csv",
+	    "table_name":"hetero_mf_b_t",
+	    "namespace":"hetero_guest_mf_t",
+	    "head": 1,
+	    "partition": 10
+    },
+    {
+      "role": "host_0",
+      "file":"examples/data/toydata_mf_a_tuple.csv",
+	    "table_name":"hetero_mf_a_t",
+	    "namespace":"hetero_host_mf_t",
+	    "head": 1,
+      "partition": 10
+    },
+    {
+      "role": "guest_0",
+      "file":"examples/data/toydata_item_fea_b.csv",
+	    "table_name":"hetero_mf_b_itemfea",
+	    "namespace":"hetero_guest_mf_itemfea",
+	    "head": 1,
+	    "partition": 10
+    },
+    {
+      "role": "host_0",
+      "file":"examples/data/toydata_item_fea_a.csv",
+	    "table_name":"hetero_mf_a_itemfea",
+	    "namespace":"hetero_host_mf_itemfea",
+	    "head": 1,
+	    "partition": 10
+    }
+  ],
+  "tasks": {
+    "cdl_train": {
+      "conf": "test_hetero_cdl_train_then_predict_conf.json",
+      "dsl": "test_hetero_cdl_train_then_predict_dsl.json"
+    },
+    "cdl_predict": {
+      "conf": "test_cdl_predict.json",
+      "deps": "cdl_train"
+    }
+  }
+}
