@@ -97,26 +97,26 @@
 		}
 	},
 	"algorithm_parameters": {
-		"neg_count": 2,
-		"init_param": {
-			"init_method": "random_uniform",
-			"embed_dim": 10
-		},
-		"mlp_params": {
-			"embed_dim": 10,
-			"num_layer": 3,
-			"layer_dim": [
-				32,
-				32,
-				32
-			],
-			"reg_layers": [
-				0,
-				0,
-				0
-			]
-		},
 		"hetero_ncf_0": {
+  		"neg_count": 2,
+  		"init_param": {
+  			"init_method": "random_uniform",
+  			"embed_dim": 10
+  		},
+  		"mlp_params": {
+  			"embed_dim": 10,
+  			"num_layer": 3,
+  			"layer_dim": [
+  				32,
+  				32,
+  				32
+  			],
+  			"reg_layers": [
+  				0,
+  				0,
+  				0
+  			]
+  		},
 			"batch_size": 1024,
 			"optimizer": {
 				"optimizer": "RMSprop",
