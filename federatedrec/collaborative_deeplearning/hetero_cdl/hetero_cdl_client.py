@@ -70,8 +70,8 @@ class HeteroCDLClient(HeteroCDLBase):
         return data_overview.get_features_shape(data_instances)
 
     def fit(self, data, validate_data=None):
-        data_instances = data[0]
-        itemfea_instances = data[1]
+        data_instances = data["dataio_0"]
+        itemfea_instances = data["dataio_1"]
         LOGGER.debug("Start data count: {}".format(data_instances.count()))
 
         # self._abnormal_detection(data_instances)
@@ -150,6 +150,8 @@ class HeteroCDLClient(HeteroCDLBase):
         # item_ids = [_id for (_id, _) in item_ids_table.collect()]
         if isinstance(data_inst, list):
             data_inst = data_inst[0]
+        elif isinstance(data_inst, dict):
+            data_inst = data_inst["dataio_0"]
 
         data = self.data_converter.convert(data_inst, self._model.user_ids, self._model.item_ids, None,
                                            self.batch_size)
