@@ -63,4 +63,11 @@ Build hetero NCF module through multiple parties.
 - Data Input: Input DTable of user-item rating matrix data(using positive data only).
 - Model Output: Hetero NCF model.
 
+##### 8. [Hetero CMN](./collaborative_memory/README.md)
+Build hetero CMN module through multiple parties.
+
+- Corresponding module name: HeteroCMN
+- Data Input: Input DTable of user-item rating matrix data(using positive data only).
+- Model Output: Hetero CMN model.
+
 More available algorithms are coming soon.

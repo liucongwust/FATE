@@ -1,8 +1,12 @@
-# Federated Neural Collaborative Filtering
+# Federated Collaborative Memory Network
 
-Neural Collaborative Filtering (NCF) is a popular deep neural networks approach applied in recommendation system. It strives to tackle the key problem of collaborative filtering on the basis of implicit feedback, which was published in WWW'17(2017 International World Wide Web Conference Committee).
+Collaborative Memory Network (CMN) is a popular deep neural networks approach applied in recommendation system. It
+ employs a deep architecture to unify the two classes of CF models capitalizing on the strengths of the global
+  structure of latent factor model and local neighborhood-based structure in a nonlinear fashion, which was published
+   in SIGIR'18: The 41st International ACM SIGIR Conference on Research & Development in Information Retrieval, July 8–12, 2018, Ann Arbor, MI, USA. ACM, New York, NY, USA, 10 pages. https: //doi.org/10.1145/3209978.3209991.
 
-In FATE, we implement an Federated NCF algorithm using these cross-party user embeddings, while each party retains own items embeddings, then exchange their user embedding under encryption to get better performance. 
+In FATE, we implement an Federated NCF algorithm using these cross-party user embeddings, while each party retains own
+ items embeddings, then exchange their user embedding under encryption to get better performance. 
 
 Here we simplify participants of the federation process into three parties. Party A represents Guest, party B represents Host. Party C, which is also known as “Arbiter,” is a third party that works as coordinator. Party C is responsible for generating private and public keys.
 
@@ -11,20 +15,15 @@ Here we simplify participants of the federation process into three parties. Part
 The inference process of HeteroNCF is shown below:
 
 <div style="text-align:center", align=center>
-<img src="../images/NCF.png" alt="samples" width="500" height="300" /><br/>
-Figure 1： Neural Collaborative Filtering</div>
+<img src="../images/CMN.png" alt="samples" width="500" height="300" /><br/>
+Figure 1：Architecture of Collaborative Memory Network (CMN) with a single hop (a) and with multiple hops (b).</div>
 
 <div style="text-align:center", align=center>
-<img src="../images/FedNCF.png" alt="samples" width="500" height="300" /><br/>
-Figure 2： Federated Neural Collaborative Filtering</div>
+<img src="../images/FedCMN.png" alt="samples" width="500" height="300" /><br/>
+Figure 2： Federated Collaborative Memory Network</div>
 
-Hetero MF-based methods has not need to alignment samples, instead of having similar user ids, conducting same methods to generate userIds. The sample is designed as a tuple (sample_id, user_id, item_id, rating).
+Unlike other hetero federated learning approaches, hetero MF-based methods has not need to alignment samples, instead of having similar user ids, conducting same methods to generate userIds. The sample is designed as a tuple (sample_id, user_id, item_id, rating).
 
-Considering the one-class nature of implicit feedback, we can view the value of y<sub>ui</sub> as a label — 1 means item i is relevant to u, and 0 otherwise. In party A and B, we take the same logloss fucntion to learn model parameters as follow: 
-
-<div style="text-align:center", align=center>
-<img src="../images/NCF_loss.png" alt="samples" /><br/>
-</div>
 In the training process, party A and party B each compute their own user and item embeddings, and send their user embeddings to arbiter party under homomorphic encryption. Arbiter then aggregates, calculates, and transfers back the final user embedding to corresponding parties. 
 
 ## Features:

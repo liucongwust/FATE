@@ -1,4 +1,4 @@
-## Homo Neural Network Configuration Usage Guide.
+## Hetero Collaborative Memory Network Configuration Usage Guide.
 
 This section introduces the dsl and conf for usage of federated GMF(generalized matrix factorization model).
 #### Training Task.
