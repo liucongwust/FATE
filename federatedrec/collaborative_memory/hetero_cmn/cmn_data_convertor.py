@@ -259,8 +259,8 @@ class CMNSequenceData(tf.keras.utils.Sequence):
         end = self.batch_size * (index + 1)
         if self.flow_id != 'validate':
             X = [self.users[start: end], self.items[start: end], self.neg_items[start: end],
-                 self.neg_length[start:end], self.neg_neighbor[start:end, :],
-                 self.pos_length[start:end], self.pos_neighbor[start:end, :]]
+                 self.pos_length[start:end], self.pos_neighbor[start:end, :],
+                 self.neg_length[start:end], self.neg_neighbor[start:end, :]]
             # y = self.y[start:end, :]
             y = [self.y_1[start:end, :], self.y_0[start:end, :], self.y_0[start:end, :]]
         else:

@@ -197,8 +197,8 @@ class CMNModel:
         items_input = Input(shape=(1,), dtype='int32', name='item_input')
         neg_items_input = Input(shape=(1,), dtype='int32', name='neg_items_input')
         pos_length_input = Input(shape=(1,), dtype='int32', name='pos_length_input')
-        neg_length_input = Input(shape=(1,), dtype='int32', name='neg_length_input')
         pos_neighbors_input = Input(shape=(max_len,), dtype='int32', name='pos_neighbors_input')
+        neg_length_input = Input(shape=(1,), dtype='int32', name='neg_length_input')
         neg_neighbors_input = Input(shape=(max_len,), dtype='int32', name='neg_neighbors_input')
 
         # users = Lambda(lambda x: tf.reshape(x, [-1]))(users_input)
