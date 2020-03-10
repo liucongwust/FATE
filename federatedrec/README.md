@@ -70,4 +70,11 @@ Build hetero CMN module through multiple parties.
 - Data Input: Input DTable of user-item rating matrix data(using positive data only).
 - Model Output: Hetero CMN model.
 
+##### 9. [Hetero CDL](./collaborative_deeplearning/README.md)
+Build hetero CDL module through multiple parties.
+
+- Corresponding module name: HeteroCDL
+- Data Input: Input DTable of user-item rating matrix data.
+- Model Output: Hetero CDL model.
+
 More available algorithms are coming soon.
