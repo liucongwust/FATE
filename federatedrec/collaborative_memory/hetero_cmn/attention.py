@@ -197,10 +197,10 @@ class VariableLengthMemoryLayer(tf.keras.layers.Layer):
                 # Apply Mapping
                 hop_mapping = tf.keras.layers.Dense(units=self.embed_size
                                                     , use_bias=True
-                                                    , kernel_initializer=RandomNormal(stddev=0.01)
-                                                    , kernel_regularizer=l2(0.01)
+                                                    , kernel_initializer=RandomNormal(stddev=0.1)
+                                                    , kernel_regularizer=l2(0.0001)
                                                     , bias_initializer=RandomUniform(minval=0, maxval=1)
-                                                    , bias_regularizer=l2(0.01)
+                                                    , bias_regularizer=l2(0.0001)
                                                     , name='HopMap%s' % hop_k)
                 with tf.name_scope('Map'):
                     # z = m_u + e_i

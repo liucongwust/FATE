@@ -28,6 +28,7 @@ from tensorflow.python.keras.backend import set_session
 from tensorflow.keras.initializers import RandomNormal
 from tensorflow.keras.layers import Input, Embedding, Lambda, Subtract, Concatenate, Multiply, Dense, Flatten
 from tensorflow.keras.regularizers import l2
+from tensorflow.keras.losses import MSE as MSE
 
 from arch.api.utils import log_utils
 from federatedrec.utils import zip_dir_as_bytes
@@ -276,13 +277,16 @@ class CMNModel:
         self._model = Model(
             inputs=[users_input, items_input, neg_items_input, neg_length_input, neg_neighbors_input, pos_length_input,
                     pos_neighbors_input],
-            outputs=loss_inst)
+            outputs=[pos_output, neg_output, loss_inst])
+
         # model for prediction
         self._predict_model = Model(inputs=[users_input, items_input, pos_length_input, pos_neighbors_input],
                                     outputs=pos_output)
         LOGGER.info(f"model output names {self._model.output_names}")
 
-        self._model.compile(optimizer=optimizer_instance, loss=cmn_loss, metrics=metrics)
+        # self._model.compile(optimizer=optimizer_instance, loss=cmn_loss, metrics=metrics)
+        self._model.compile(optimizer=optimizer_instance,
+                            loss=[MSE, MSE, cmn_loss], metrics=["MSE", "MSE", "MSE"], loss_weights=[0.4, 0.4, 0.2])
 
         init = tf.initialize_all_variables()
         sess.run(init)
@@ -291,6 +295,7 @@ class CMNModel:
         LOGGER.info(f"_trainable_weights: {self._model.trainable_weights}")
         self._trainable_weights = {v.name.split("/")[0]: v for v in self._model.trainable_weights}
         LOGGER.info(f"_trainable_weights: {self._trainable_weights}")
+        LOGGER.info(f"MemoryEmbed: {self.session.run(self._trainable_weights['MemoryEmbed'])}")
 
         self._aggregate_weights = {"MemoryOutput": self._trainable_weights["MemoryOutput"]}
 

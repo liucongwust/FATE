@@ -62,7 +62,8 @@ class CMNSequenceData(tf.keras.utils.Sequence):
         if size <= 0:
             raise ValueError("empty data")
         self.size = size
-        self.y = np.zeros((size * self.neg_count, 1), dtype=np.int32)
+        self.y_0 = np.zeros((size * self.neg_count, 1), dtype=np.int32)
+        self.y_1 = np.ones((size * self.neg_count, 1), dtype=np.int32)
         self.validate_size = size * (self.neg_count + 1)
         self.validate_y = np.zeros((self.validate_size, 1), dtype=np.int32)
         self.batch_size = batch_size if batch_size > 0 else self.size
@@ -260,7 +261,8 @@ class CMNSequenceData(tf.keras.utils.Sequence):
             X = [self.users[start: end], self.items[start: end], self.neg_items[start: end],
                  self.neg_length[start:end], self.neg_neighbor[start:end, :],
                  self.pos_length[start:end], self.pos_neighbor[start:end, :]]
-            y = self.y[start:end, :]
+            # y = self.y[start:end, :]
+            y = [self.y_1[start:end, :], self.y_0[start:end, :], self.y_0[start:end, :]]
         else:
             X = [self.validate_user[start: end], self.validate_item[start: end],
                  self.validate_length[start:end], self.validate_neighbor[start:end, :]]
