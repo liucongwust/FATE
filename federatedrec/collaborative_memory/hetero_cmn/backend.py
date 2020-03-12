@@ -201,14 +201,13 @@ class CMNModel:
         neg_length_input = Input(shape=(1,), dtype='int32', name='neg_length_input')
         neg_neighbors_input = Input(shape=(max_len,), dtype='int32', name='neg_neighbors_input')
 
-        # users = Lambda(lambda x: tf.reshape(x, [-1]))(users_input)
+        users = Lambda(lambda x: tf.keras.backend.squeeze(x, -1))(users_input)
         items = Lambda(
-            lambda x: tf.strings.to_hash_bucket(tf.strings.as_string(x), item_num))(items_input)
+            lambda x: tf.strings.to_hash_bucket(tf.strings.as_string(tf.keras.backend.squeeze(x, -1)), item_num))(items_input)
         neg_items = Lambda(
-            lambda x: tf.strings.to_hash_bucket(tf.strings.as_string(tf.reshape(x, [-1])), item_num))(
-            neg_items_input)
-        pos_length = Lambda(lambda x: tf.keras.backend.squeeze(x, 1))(pos_length_input)
-        neg_length = Lambda(lambda x: tf.keras.backend.squeeze(x, 1))(neg_length_input)
+            lambda x: tf.strings.to_hash_bucket(tf.strings.as_string(tf.keras.backend.squeeze(x, -1)), item_num))(neg_items_input)
+        pos_length = Lambda(lambda x: tf.keras.backend.squeeze(x, -1))(pos_length_input)
+        neg_length = Lambda(lambda x: tf.keras.backend.squeeze(x, -1))(neg_length_input)
 
         user_embed_layer = Embedding(user_num, embedding_dim,
                                      embeddings_initializer=RandomNormal(stddev=0.1),
@@ -240,10 +239,8 @@ class CMNModel:
                   , name='OutputVector')
         ])
         # positive
-        cur_user_embed = user_embed_layer(users_input)
-        cur_user_embed = Flatten()(cur_user_embed)
+        cur_user_embed = user_embed_layer(users)
         cur_item_embed = item_embed_layer(items)
-        cur_item_embed = Flatten()(cur_item_embed)
         neighbor_embed = user_embed_layer(pos_neighbors_input)
         neighbor_output_embed = user_external_embed_layer(pos_neighbors_input)
 
@@ -256,7 +253,6 @@ class CMNModel:
 
         # negative
         neg_item_embed = item_embed_layer(neg_items)
-        neg_item_embed = Flatten()(neg_item_embed)
         neg_neighbor_embed = user_embed_layer(neg_neighbors_input)
         neg_neighbor_output_embed = user_external_embed_layer(neg_neighbors_input)
         neg_query = (cur_user_embed, neg_item_embed)
@@ -295,7 +291,7 @@ class CMNModel:
         LOGGER.info(f"_trainable_weights: {self._model.trainable_weights}")
         self._trainable_weights = {v.name.split("/")[0]: v for v in self._model.trainable_weights}
         LOGGER.info(f"_trainable_weights: {self._trainable_weights}")
-        LOGGER.info(f"MemoryEmbed: {self.session.run(self._trainable_weights['MemoryEmbed'])}")
+        # LOGGER.info(f"MemoryEmbed: {self.session.run(self._trainable_weights['MemoryEmbed'])}")
 
         self._aggregate_weights = {"MemoryOutput": self._trainable_weights["MemoryOutput"]}
 

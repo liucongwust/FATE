@@ -1,9 +1,9 @@
 {
   "optimizer": {
-    "optimizer": "RMSprop",
-    "learning_rate": 0.05,
-    "decay": 0.9,
-    "momentum": 0.9
+    "optimizer": "Adam",
+    "learning_rate":0.001,
+    "beta_1":0.9,
+    "beta_2": 0.999
   },
   "max_iter": 100,
   "batch_size": 320,

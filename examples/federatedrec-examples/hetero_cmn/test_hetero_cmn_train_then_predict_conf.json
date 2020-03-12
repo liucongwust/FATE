@@ -94,21 +94,17 @@
 		}
 	},
 	"algorithm_parameters": {
-		"init_param": {
-			"init_method": "random_uniform",
-			"embed_dim": 30
-		},
-		"neg_count": 4,
-    "hops":2,
-		"max_len":20,
-		"l2_coef":0.001,
 		"hetero_cmn_0": {
+			"neg_count": 4,
+			"hops":2,
+			"max_len":20,
+			"l2_coef":0.001,
 			"batch_size": 1024,
 			"optimizer": {
-				"optimizer": "RMSprop",
-				"learning_rate": 0.05,
-				"decay": 0.9,
-				"momentum": 0.9
+				"optimizer": "Adam",
+				"learning_rate":0.001,
+    		"beta_1":0.9,
+    		"beta_2": 0.999
 			},
 			"early_stop": {
 				"early_stop": "diff",
