@@ -198,6 +198,8 @@ class CMNSequenceData(tf.keras.utils.Sequence):
                 users[idx] = user_idx
                 items[idx] = item_idx
                 neg_items[idx] = neg_item_idx
+                validate_user[valid_idx] = user_idx
+                validate_item[valid_idx] = neg_item_idx
 
                 # Get neighborhood information
                 pos_length[idx] = cur_pos_len
@@ -246,6 +248,8 @@ class CMNSequenceData(tf.keras.utils.Sequence):
         self.validate_length = validate_length[valid_shuffle_idx]
         self.validate_neighbor = validate_neighbor[valid_shuffle_idx, :]
 
+        LOGGER.info(f"validate_y: {self.validate_y[0:10]}, validate_user: {self.validate_user[0:10]}, validate_item: {self.validate_item[0:10]}")
+
     def __getitem__(self, index):
         """Gets batch at position `index`.
 
@@ -287,7 +291,9 @@ class CMNSequenceData(tf.keras.utils.Sequence):
         """
         :return: labels of validation data
         """
-        return self.validate_y.astype(int).tolist()
+        return zip(self.validate_y.astype(int).tolist(), self.validate_user.astype(int).tolist(),
+                   self.validate_item.astype(int).tolist())
+        # return self.validate_y.astype(int).tolist()
 
 
 class CMNSequencePredictData(tf.keras.utils.Sequence):

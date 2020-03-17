@@ -219,7 +219,8 @@ class HeteroCMNClient(HeteroCMNBase):
                                                , user_items=self.user_items, item_users=self.item_users
                                                , training=False)
 
-            label_data = data_inst.map(lambda k, v: (k, v.features.astype(int).tolist()[2]))
+            # label_data = data_inst.map(lambda k, v: (k, v.features.astype(int).tolist()[2]))
+            label_data = data_inst.map(lambda k, v: (k, v.features.astype(int).tolist()))
         LOGGER.info(f"label_data example: {label_data.take(10)}")
         LOGGER.info(f"data example: {data_inst.first()[1].features.astype(int)}")
         LOGGER.info(f"converted data, size :{data.size}")
