@@ -20,7 +20,7 @@ from arch.api.utils import log_utils
 from federatedml.model_base import ModelBase
 from federatedml.framework.homo.procedure import aggregator
 from federatedrec.param.collaborative_deeplearning_param import HeteroCDLParam
-from federatedml.transfer_variable.transfer_class.hetero_cdl_transfer_variable import HeteroCDLTransferVariable
+from federatedrec.transfer_variable.transfer_class.hetero_cdl_transfer_variable import HeteroCDLTransferVariable
 
 LOGGER = log_utils.getLogger()
 
