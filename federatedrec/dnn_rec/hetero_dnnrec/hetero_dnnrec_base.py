@@ -20,7 +20,7 @@ from arch.api.utils import log_utils
 from federatedml.model_base import ModelBase
 from federatedml.framework.homo.procedure import aggregator
 from federatedrec.param.dnn_rec_param import HeteroDNNRecParam
-from federatedml.transfer_variable.transfer_class.hetero_dnnrec_transfer_variable import HeteroDNNRecTransferVariable
+from federatedrec.transfer_variable.transfer_class.hetero_dnnrec_transfer_variable import HeteroDNNRecTransferVariable
 
 LOGGER = log_utils.getLogger()
 
