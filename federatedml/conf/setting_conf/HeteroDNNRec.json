@@ -1,0 +1,16 @@
+{
+  "module_path": "federatedrec/dnn_rec/hetero_dnnrec",
+  "default_runtime_conf": "dnn_rec_param.json",
+  "param_class": "federatedrec/param/dnn_rec_param.py/HeteroDNNRecParam",
+  "role": {
+    "guest": {
+      "program": "hetero_dnnrec_client.py/HeteroDNNRecGuest"
+    },
+    "host": {
+      "program": "hetero_dnnrec_client.py/HeteroDNNRecHost"
+    },
+    "arbiter": {
+      "program": "hetero_dnnrec_arbiter.py/HeteroDNNRecArbiter"
+    }
+  }
+}
