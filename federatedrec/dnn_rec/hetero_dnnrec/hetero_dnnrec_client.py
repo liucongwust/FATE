@@ -86,11 +86,14 @@ class HeteroDNNRecClient(HeteroDNNRecBase):
         :param validate_data:  validation data
         :return:
         """
-        data = self.data_converter.convert(data_instances, batch_size=self.batch_size,
-                                           neg_count=self.model_param.neg_count)
+        data = self.data_converter.convert(data_instances, batch_size=self.batch_size)
 
         user_num = data.user_count
         item_num = data.item_count
+        title_dim = data.title_dim
+        genres_dim = data.genres_dim
+        tags_dim = data.tag_dim
+        max_clk_num = data.max_clicks
 
         LOGGER.info(f'send user_num')
         self.send_user_num(user_num)
@@ -101,9 +104,11 @@ class HeteroDNNRecClient(HeteroDNNRecBase):
         self.item_num = item_num
 
         self._model = DNNRecModel.build_model(user_num=self.user_num, item_num=item_num,
-                                           embedding_dim=self.params.init_param.embed_dim,
-                                           mlp_params=self.model_param.mlp_params,
-                                           loss=self.loss, optimizer=self.optimizer, metrics=self.metrics)
+                                              embedding_dim=self.params.init_param.embed_dim,
+                                              title_dim=title_dim, genres_dim=genres_dim, tags_dim=tags_dim,
+                                              max_clk_num=max_clk_num,
+                                              mlp_params=self.model_param.mlp_params,
+                                              loss=self.loss, optimizer=self.optimizer, metrics=self.metrics)
 
         epoch_degree = float(len(data))
 
@@ -204,7 +209,8 @@ class HeteroDNNRecClient(HeteroDNNRecBase):
         self.model_param.restore_from_pb(meta_obj.params)
         self._init_model(self.model_param)
         self.aggregator_iter = meta_obj.aggregate_iter
-        self._model = DNNRecModel.restore_model(model_obj.saved_model_bytes, model_obj.user_num, model_obj.item_num, self.model_param.init_param.embed_dim)
+        self._model = DNNRecModel.restore_model(model_obj.saved_model_bytes, model_obj.user_num, model_obj.item_num,
+                                                self.model_param.init_param.embed_dim)
         self._model.set_user_num(model_obj.user_num)
         self._model.set_item_num(model_obj.item_num)
 

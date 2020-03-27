@@ -29,8 +29,9 @@ from tensorflow.keras.losses import MSE as MSE
 from tensorflow.keras import Model
 from tensorflow.python.keras.backend import set_session
 from tensorflow.keras.initializers import RandomNormal
-from tensorflow.keras.layers import Input, Embedding, Lambda, Dense, Multiply, Concatenate, Flatten
+from tensorflow.keras.layers import Input, Embedding, Lambda, Dense, Multiply, Concatenate, Average, Dot
 from tensorflow_core.python.keras.regularizers import l2
+from tensorflow.keras import Sequential
 
 from arch.api.utils import log_utils
 from federatedrec.utils import zip_dir_as_bytes
@@ -107,6 +108,7 @@ class DNNRecModel:
         Return model's weights as OrderDictWeights.
         :return: model's weights.
         """
+        LOGGER.info(f"model weights: {self.session.run(self._aggregate_weights)}")
         return OrderDictWeights(self.session.run(self._aggregate_weights))
 
     def set_model_weights(self, weights: Weights):
@@ -169,15 +171,21 @@ class DNNRecModel:
         with tempfile.TemporaryDirectory() as tmp_path:
             LOGGER.info(f"tmp_path: {tmp_path}")
             tf.keras.experimental.export_saved_model(
-                    self._model, saved_model_path=tmp_path)
+                self._model, saved_model_path=tmp_path)
 
             model_bytes = zip_dir_as_bytes(tmp_path)
 
         return model_bytes
 
-    def build(self, user_num, item_num, embedding_dim, mlp_params={}, optimizer='rmsprop', loss='mse', metrics='mse'):
+    def build(self, user_num, item_num, embedding_dim, title_dim, genres_dim, tags_dim, max_clk_num,
+              mlp_params={}, optimizer='rmsprop', loss='mse', metrics='mse'):
         """
         build network graph of model
+        :param mlp_params: DNN params
+        :param max_clk_num: maximum num of clicked items
+        :param tags_dim: tags vocabulary size
+        :param genres_dim: genres vocabulary size
+        :param title_dim: title vocabulary size
         :param user_num: user num
         :param item_num: item num
         :param embedding_dim: embedding dimension
@@ -190,53 +198,61 @@ class DNNRecModel:
         users_input = Input(shape=(1,), dtype='int32', name='user_input')
         items_input = Input(shape=(1,), dtype='int32', name='item_input')
 
+        title_input = Input(shape=(title_dim,), dtype='float32', name='title_input')
+        genres_input = Input(shape=(genres_dim,), dtype='float32', name='genres_input')
+        tags_input = Input(shape=(tags_dim,), dtype='float32', name='tags_input')
+        clk_items_input = Input(shape=(max_clk_num,), dtype='int32', name='clk_items_input')
+
+        users = Lambda(lambda x: tf.keras.backend.squeeze(x, -1))(users_input)
         items = Lambda(
-            lambda x: tf.strings.to_hash_bucket(tf.strings.as_string(x), item_num))(items_input)
+            lambda x: tf.strings.to_hash_bucket(tf.strings.as_string(tf.keras.backend.squeeze(x, -1)), item_num))(
+            items_input)
 
-        mf_user_embed_layer = Embedding(user_num, embedding_dim,
-                                        embeddings_initializer=RandomNormal(stddev=0.1),
-                                        name='mf_user_embedding')
+        user_embed_layer = Embedding(user_num, embedding_dim,
+                                     embeddings_initializer=RandomNormal(stddev=0.1),
+                                     name='user_embedding')
 
-        mf_item_embed_layer = Embedding(item_num, embedding_dim,
-                                        embeddings_initializer=RandomNormal(stddev=0.1),
-                                        name='mf_item_embedding')
+        item_embed_layer = Embedding(item_num, embedding_dim,
+                                     embeddings_initializer=RandomNormal(stddev=0.1),
+                                     mask_zero=True, name='item_embedding')
 
-        mlp_user_embed_layer = Embedding(user_num, mlp_params["embed_dim"],
-                                         embeddings_initializer=RandomNormal(stddev=0.1),
-                                         name='mlp_user_embedding')
+        item_embed = item_embed_layer(items)
+        LOGGER.info(f"shape of title: {title_input.shape}, genres: {genres_input.shape}, tag : {tags_input.shape}"
+                    f", clicked items: {clk_items_input.shape}, item embed: {item_embed.shape}")
+        item_dense = Concatenate()([item_embed, genres_input, tags_input, title_input])
 
-        mlp_item_embed_layer = Embedding(item_num, mlp_params["embed_dim"],
-                                         embeddings_initializer=RandomNormal(stddev=0.1),
-                                         name='mlp_item_embedding')
+        user_embed = user_embed_layer(users)
 
-        mf_user_embed = mf_user_embed_layer(users_input)
-        mf_user_embed = Flatten()(mf_user_embed)
-        mf_item_embed = mf_item_embed_layer(items)
-        mf_item_embed = Flatten()(mf_item_embed)
+        clk_items = Lambda(lambda x: tf.strings.to_hash_bucket(tf.strings.as_string(x), item_num))(clk_items_input)
+        clk_items_embed = item_embed_layer(clk_items)
+        clk_items_embed = Lambda(lambda x: tf.keras.backend.mean(x, axis=-1))(clk_items_embed)
+        user_dense = Concatenate()([user_embed, clk_items_embed])
 
-        mlp_user_embed = mlp_user_embed_layer(users_input)
-        mlp_user_embed = Flatten()(mlp_user_embed)
-        mlp_item_embed = mlp_item_embed_layer(items)
-        mlp_item_embed = Flatten()(mlp_item_embed)
-
-        mf_vector = Multiply()([mf_user_embed, mf_item_embed])
-        mlp_vector = Concatenate(axis=-1)([mlp_user_embed, mlp_item_embed])
-
-        for idx in range(1, mlp_params["num_layer"]):
+        item_dnn_squential = Sequential()
+        for idx in range(mlp_params["num_layer"]):
             layer = Dense(mlp_params["layer_dim"][idx]
                           , kernel_regularizer=l2(mlp_params["reg_layers"][idx])
                           , activation='relu'
-                          , name="layer%d" % idx)
-            mlp_vector = layer(mlp_vector)
+                          , name="item_layer_%d" % idx)
+            item_dnn_squential.add(layer)
 
-        predict_vector = Concatenate(axis=-1)([mf_vector, mlp_vector])
-        prediction = Dense(1, activation='sigmoid', kernel_initializer='lecun_uniform', name="prediction")(
-            predict_vector)
+        user_dnn_squential = Sequential()
+        for idx in range(mlp_params["num_layer"]):
+            layer = Dense(mlp_params["layer_dim"][idx]
+                          , kernel_regularizer=l2(mlp_params["reg_layers"][idx])
+                          , activation='relu'
+                          , name="user_layer_%d" % idx)
+            user_dnn_squential.add(layer)
+
+        user_output = user_dnn_squential(user_dense)
+        item_output = item_dnn_squential(item_dense)
+        LOGGER.info(f"shape, user_output: {user_output.shape}, item_output: {item_output.shape}")
+        pred_out = Dot(axes=-1)([user_output, item_output])
 
         optimizer_instance = getattr(tf.keras.optimizers, optimizer.optimizer)(**optimizer.kwargs)
 
-        self._model = Model(inputs=[users_input, items_input],
-                            outputs=prediction)
+        self._model = Model(inputs=[users_input, items_input, title_input, genres_input, tags_input, clk_items_input],
+                            outputs=pred_out)
         # model for prediction
         LOGGER.info(f"model output names {self._model.output_names}")
         self._model.compile(optimizer=optimizer_instance,
@@ -244,14 +260,19 @@ class DNNRecModel:
 
         # pick user_embedding for aggregating
         self._trainable_weights = {v.name.split("/")[0]: v for v in self._model.trainable_weights}
-        self._aggregate_weights = {"mf_user_embedding": self._trainable_weights["mf_user_embedding"],
-                                   "mlp_user_embedding": self._trainable_weights["mlp_user_embedding"]}
+        self._aggregate_weights = {"user_embedding": self._trainable_weights["user_embedding"]}
         LOGGER.info(f"finish building model, in {self.__class__.__name__} _build function")
 
     @classmethod
-    def build_model(cls, user_num, item_num, embedding_dim, mlp_params, loss, optimizer, metrics):
+    def build_model(cls, user_num, item_num, embedding_dim, title_dim, genres_dim, tags_dim, max_clk_num,
+                    mlp_params={}, optimizer='rmsprop', loss='mse', metrics='mse'):
         """
         build model
+        :param mlp_params: DNN params
+        :param max_clk_num: maximum num of clicked items
+        :param tags_dim: tags vocabulary size
+        :param genres_dim: genres vocabulary size
+        :param title_dim: title vocabulary size
         :param user_num: user num
         :param item_num:  item num
         :param embedding_dim: embedding dimension
@@ -266,9 +287,9 @@ class DNNRecModel:
         LOGGER.info(f"build model mlp_params: {mlp_params}")
         model = cls(user_num=user_num, item_num=item_num, embedding_dim=embedding_dim, mlp_params=mlp_params)
         model.build(user_num=user_num, item_num=item_num, embedding_dim=embedding_dim, mlp_params=mlp_params,
+                    title_dim=title_dim, genres_dim=genres_dim, tags_dim=tags_dim, max_clk_num=max_clk_num,
                     loss=loss, optimizer=optimizer, metrics=metrics)
         return model
-
 
     @property
     def session(self):

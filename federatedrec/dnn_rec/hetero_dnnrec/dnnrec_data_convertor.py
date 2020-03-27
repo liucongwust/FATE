@@ -170,6 +170,7 @@ class DNNRecSequenceData(tf.keras.utils.Sequence):
         Number of maximum clicked items
         :return:
         """
+        return self._max_clicks
 
     def transfer_data(self):
         # Allocate inputs
