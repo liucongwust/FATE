@@ -27,4 +27,8 @@ message DNNRecModelParam {
     repeated string header = 5;
     int32 user_num = 6;
     int32 item_num = 7;
+    int32 title_dim = 8;
+    int32 genres_dim = 9;
+    int32 tags_dim = 10;
+    int32 max_clk_num = 11;
 }

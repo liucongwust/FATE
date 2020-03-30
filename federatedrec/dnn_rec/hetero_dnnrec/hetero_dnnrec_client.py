@@ -36,6 +36,10 @@ class HeteroDNNRecClient(HeteroDNNRecBase):
     def __init__(self):
         super(HeteroDNNRecClient, self).__init__()
 
+        self.max_clk_num = None
+        self.genres_dim = None
+        self.tags_dim = None
+        self.title_dim = None
         self._model = None
         self.feature_shape = None
         self.user_num = None
@@ -102,6 +106,10 @@ class HeteroDNNRecClient(HeteroDNNRecBase):
         LOGGER.info(f'local user num: {user_num}, remote user num: {remote_user_num}')
         self.user_num = max(remote_user_num, user_num)
         self.item_num = item_num
+        self.max_clk_num = max_clk_num
+        self.genres_dim = genres_dim
+        self.tags_dim = tags_dim
+        self.title_dim = title_dim
 
         self._model = DNNRecModel.build_model(user_num=self.user_num, item_num=item_num,
                                               embedding_dim=self.params.init_param.embed_dim,
@@ -170,6 +178,10 @@ class HeteroDNNRecClient(HeteroDNNRecBase):
         param_pb.saved_model_bytes = self._model.export_model()
         param_pb.user_num = self.user_num
         param_pb.item_num = self.item_num
+        param_pb.title_dim = self.title_dim
+        param_pb.genres_dim = self.genres_dim
+        param_pb.tags_dim = self.tags_dim
+        param_pb.max_clk_num = self.max_clk_num
         return param_pb
 
     def predict(self, data_inst):
@@ -209,8 +221,11 @@ class HeteroDNNRecClient(HeteroDNNRecBase):
         self.model_param.restore_from_pb(meta_obj.params)
         self._init_model(self.model_param)
         self.aggregator_iter = meta_obj.aggregate_iter
+        LOGGER.info(f"title_dim: {model_obj.title_dim}, genres_dim: {model_obj.genres_dim},"
+                    f"tags_dim: {model_obj.tags_dim}, max_clk_num: {model_obj.max_clk_num}")
         self._model = DNNRecModel.restore_model(model_obj.saved_model_bytes, model_obj.user_num, model_obj.item_num,
-                                                self.model_param.init_param.embed_dim)
+                                                self.model_param.init_param.embed_dim, model_obj.title_dim,
+                                                model_obj.genres_dim, model_obj.tags_dim, model_obj.max_clk_num)
         self._model.set_user_num(model_obj.user_num)
         self._model.set_item_num(model_obj.item_num)
 

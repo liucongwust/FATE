@@ -39,8 +39,7 @@ message HeteroDNNRecParam {
     Optimizer optimizer = 7;
     string loss = 8;
     int32 embed_dim = 9;
-    int32 neg_count = 10;
-    string mlp_params = 11;
+    string mlp_params = 10;
 }
 
 message DNNRecModelMeta {

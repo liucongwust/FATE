@@ -52,9 +52,14 @@ class DNNRecModel:
     General Matrix Factorization model
     """
 
-    def __init__(self, user_num=None, item_num=None, embedding_dim=10, mlp_params=default_mlp_param):
+    def __init__(self, user_num=None, item_num=None, embedding_dim=10, title_dim=None,
+                 genres_dim=None, tags_dim=None, max_clk_num=None, mlp_params=default_mlp_param):
         self.user_num = user_num
         self.item_num = item_num
+        self.title_dim = title_dim
+        self.genres_dim = genres_dim
+        self.tags_dim = tags_dim
+        self.max_clk_num = max_clk_num
         self.embedding_dim = embedding_dim
         self.mlp_params = mlp_params
         self._trainable_weights = None
@@ -108,7 +113,7 @@ class DNNRecModel:
         Return model's weights as OrderDictWeights.
         :return: model's weights.
         """
-        LOGGER.info(f"model weights: {self.session.run(self._aggregate_weights)}")
+        # LOGGER.info(f"model weights: {self.session.run(self._aggregate_weights)}")
         return OrderDictWeights(self.session.run(self._aggregate_weights))
 
     def set_model_weights(self, weights: Weights):
@@ -141,9 +146,14 @@ class DNNRecModel:
         return self._model.predict(data)
 
     @classmethod
-    def restore_model(cls, model_bytes, user_num, item_num, embedding_dim):
+    def restore_model(cls, model_bytes, user_num, item_num, embedding_dim, title_dim,
+                      genres_dim, tags_dim, max_clk_num):
         """
         Restore model from model bytes.
+        :param max_clk_num:
+        :param tags_dim:
+        :param genres_dim:
+        :param title_dim:
         :param model_bytes: model bytes of saved model.
         :param user_num: user num
         :param item_num: item num
@@ -158,7 +168,11 @@ class DNNRecModel:
 
             keras_model = tf.keras.experimental.load_from_saved_model(
                 saved_model_path=tmp_path)
-        model = cls(user_num=user_num, item_num=item_num, embedding_dim=embedding_dim)
+
+
+        model = cls(user_num=user_num, item_num=item_num, embedding_dim=embedding_dim,
+                    title_dim=title_dim, genres_dim=genres_dim, tags_dim=tags_dim,
+                    max_clk_num=max_clk_num)
         model._set_model(keras_model)
         return model
 
@@ -219,14 +233,14 @@ class DNNRecModel:
         item_embed = item_embed_layer(items)
         LOGGER.info(f"shape of title: {title_input.shape}, genres: {genres_input.shape}, tag : {tags_input.shape}"
                     f", clicked items: {clk_items_input.shape}, item embed: {item_embed.shape}")
-        item_dense = Concatenate()([item_embed, genres_input, tags_input, title_input])
+        item_dense = Concatenate(name="item_dense")([item_embed, genres_input, tags_input, title_input])
 
         user_embed = user_embed_layer(users)
 
         clk_items = Lambda(lambda x: tf.strings.to_hash_bucket(tf.strings.as_string(x), item_num))(clk_items_input)
         clk_items_embed = item_embed_layer(clk_items)
         clk_items_embed = Lambda(lambda x: tf.keras.backend.mean(x, axis=-1))(clk_items_embed)
-        user_dense = Concatenate()([user_embed, clk_items_embed])
+        user_dense = Concatenate(name="user_dense")([user_embed, clk_items_embed])
 
         item_dnn_squential = Sequential()
         for idx in range(mlp_params["num_layer"]):

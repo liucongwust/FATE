@@ -252,12 +252,12 @@ class HeteroDNNRecParam(DNNRecParam):
                  aggregate_iters=1, mlp_params={}
                  ):
         super(HeteroDNNRecParam, self).__init__(optimizer=optimizer,
-                                             batch_size=batch_size,
-                                             init_param=init_param, max_iter=max_iter,
-                                             early_stop=early_stop,
-                                             predict_param=predict_param,
-                                             cv_param=cv_param,
-                                             mlp_params=mlp_params)
+                                                batch_size=batch_size,
+                                                init_param=init_param, max_iter=max_iter,
+                                                early_stop=early_stop,
+                                                predict_param=predict_param,
+                                                cv_param=cv_param,
+                                                mlp_params=mlp_params)
 
         self.aggregate_iters = aggregate_iters
 
@@ -279,7 +279,6 @@ class HeteroDNNRecParam(DNNRecParam):
         pb.max_iter = self.max_iter
         pb.early_stop.early_stop = self.early_stop.converge_func
         pb.early_stop.eps = self.early_stop.eps
-        pb.neg_count = self.neg_count
 
         for metric in self.metrics:
             pb.metrics.append(metric)
