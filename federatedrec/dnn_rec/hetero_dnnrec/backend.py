@@ -25,11 +25,10 @@ import tempfile
 import traceback
 
 import tensorflow as tf
-from tensorflow.keras.losses import MSE as MSE
 from tensorflow.keras import Model
 from tensorflow.python.keras.backend import set_session
 from tensorflow.keras.initializers import RandomNormal
-from tensorflow.keras.layers import Input, Embedding, Lambda, Dense, Multiply, Concatenate, Average, Dot
+from tensorflow.keras.layers import Input, Embedding, Lambda, Dense, Concatenate, Dot, Flatten
 from tensorflow_core.python.keras.regularizers import l2
 from tensorflow.keras import Sequential
 
@@ -169,7 +168,6 @@ class DNNRecModel:
             keras_model = tf.keras.experimental.load_from_saved_model(
                 saved_model_path=tmp_path)
 
-
         model = cls(user_num=user_num, item_num=item_num, embedding_dim=embedding_dim,
                     title_dim=title_dim, genres_dim=genres_dim, tags_dim=tags_dim,
                     max_clk_num=max_clk_num)
@@ -218,9 +216,7 @@ class DNNRecModel:
         clk_items_input = Input(shape=(max_clk_num,), dtype='int32', name='clk_items_input')
 
         users = Lambda(lambda x: tf.keras.backend.squeeze(x, -1))(users_input)
-        items = Lambda(
-            lambda x: tf.strings.to_hash_bucket(tf.strings.as_string(tf.keras.backend.squeeze(x, -1)), item_num))(
-            items_input)
+        items = Lambda(lambda x: tf.strings.to_hash_bucket(tf.strings.as_string(x), item_num))(items_input)
 
         user_embed_layer = Embedding(user_num, embedding_dim,
                                      embeddings_initializer=RandomNormal(stddev=0.1),
@@ -231,16 +227,19 @@ class DNNRecModel:
                                      mask_zero=True, name='item_embedding')
 
         item_embed = item_embed_layer(items)
-        LOGGER.info(f"shape of title: {title_input.shape}, genres: {genres_input.shape}, tag : {tags_input.shape}"
-                    f", clicked items: {clk_items_input.shape}, item embed: {item_embed.shape}")
-        item_dense = Concatenate(name="item_dense")([item_embed, genres_input, tags_input, title_input])
+        flatten_item_embed = Flatten()(item_embed)
+        LOGGER.info(f"shape of title: {title_input.shape}, genres: {genres_input.shape}, tag: {tags_input.shape}, "
+                    f"clicked items: {clk_items_input.shape}, item embed: {item_embed.shape}, "
+                    f"flatten item embed: {flatten_item_embed.shape}")
+        item_dense = Concatenate(name="item_dense")([flatten_item_embed, genres_input, tags_input, title_input])
 
         user_embed = user_embed_layer(users)
 
         clk_items = Lambda(lambda x: tf.strings.to_hash_bucket(tf.strings.as_string(x), item_num))(clk_items_input)
         clk_items_embed = item_embed_layer(clk_items)
-        clk_items_embed = Lambda(lambda x: tf.keras.backend.mean(x, axis=-1))(clk_items_embed)
-        user_dense = Concatenate(name="user_dense")([user_embed, clk_items_embed])
+        avg_clk_embed = Lambda(lambda x: tf.keras.backend.mean(x, axis=1), name="avg_clk_embed")(clk_items_embed)
+        LOGGER.info(f"shape of clk_items_embed: {clk_items_embed.shape}, avg_clk_embed: {avg_clk_embed.shape}")
+        user_dense = Concatenate(name="user_dense")([user_embed, avg_clk_embed])
 
         item_dnn_squential = Sequential()
         for idx in range(mlp_params["num_layer"]):

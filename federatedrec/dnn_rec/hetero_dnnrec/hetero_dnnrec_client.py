@@ -218,6 +218,10 @@ class HeteroDNNRecClient(HeteroDNNRecBase):
         meta_obj = model_dict.get(self.model_meta_name)
         self.user_num = model_obj.user_num
         self.item_num = model_obj.item_num
+        self.title_dim = model_obj.title_dim
+        self.genres_dim = model_obj.genres_dim
+        self.tags_dim = model_obj.tags_dim
+        self.max_clk_num = model_obj.max_clk_num
         self.model_param.restore_from_pb(meta_obj.params)
         self._init_model(self.model_param)
         self.aggregator_iter = meta_obj.aggregate_iter
