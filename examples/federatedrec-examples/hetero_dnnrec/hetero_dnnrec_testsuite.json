@@ -1,0 +1,30 @@
+{
+  "data": [
+    {
+      "role": "guest_0",
+      "file":"examples/data/movielens_guest.csv",
+      "table_name":"hetero_movielens_train_guest",
+      "namespace":"hetero_guest_movielens",
+      "head": 1,
+      "partition": 10
+    },
+    {
+      "role": "host_0",
+      "file":"examples/data/movielens_host.csv",
+      "table_name":"hetero_movielens_train_host",
+      "namespace":"hetero_host_movielens",
+      "head": 1,
+      "partition": 10
+    }
+  ],
+  "tasks": {
+    "dnnrec_train_eval": {
+      "conf": "test_hetero_dnnrec_train_then_predict_conf.json",
+      "dsl": "test_hetero_dnnrec_train_then_predict_dsl.json"
+    },
+    "dnnrec-predict": {
+      "conf": "test_dnnrec_predict.json",
+      "deps": "dnnrec_train_eval"
+    }
+  }
+}
