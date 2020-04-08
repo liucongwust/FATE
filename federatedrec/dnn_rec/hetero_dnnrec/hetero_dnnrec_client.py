@@ -18,13 +18,15 @@
 
 import typing
 import functools
+import traceback
+
 import numpy as np
 
 from federatedml.util import consts
 from arch.api.utils import log_utils
 from arch.api import session as fate_session
 from federatedml.statistic import data_overview
-from federatedrec.optim.sync import user_num_transfer_sync
+from federatedrec.optim.sync import dnnrec_embedding_transfer_sync
 from federatedrec.dnn_rec.hetero_dnnrec.hetero_dnnrec_base import HeteroDNNRecBase
 from federatedrec.dnn_rec.hetero_dnnrec.backend import DNNRecModel
 from federatedrec.dnn_rec.hetero_dnnrec.dnnrec_data_convertor import DNNRecDataConverter
@@ -40,6 +42,8 @@ class HeteroDNNRecClient(HeteroDNNRecBase):
         self.genres_dim = None
         self.tags_dim = None
         self.title_dim = None
+        self.max_title_len = None
+        self.user_items = {}
         self._model = None
         self.feature_shape = None
         self.user_num = None
@@ -98,6 +102,7 @@ class HeteroDNNRecClient(HeteroDNNRecBase):
         genres_dim = data.genres_dim
         tags_dim = data.tag_dim
         max_clk_num = data.max_clicks
+        max_title_len = data.max_title_len
 
         LOGGER.info(f'send user_num')
         self.send_user_num(user_num)
@@ -110,10 +115,12 @@ class HeteroDNNRecClient(HeteroDNNRecBase):
         self.genres_dim = genres_dim
         self.tags_dim = tags_dim
         self.title_dim = title_dim
+        self.max_title_len = max_title_len
 
         self._model = DNNRecModel.build_model(user_num=self.user_num, item_num=item_num,
                                               embedding_dim=self.params.init_param.embed_dim,
-                                              title_dim=title_dim, genres_dim=genres_dim, tags_dim=tags_dim,
+                                              title_dim=title_dim, max_title_len=max_title_len,
+                                              genres_dim=genres_dim, tags_dim=tags_dim,
                                               max_clk_num=max_clk_num,
                                               mlp_params=self.model_param.mlp_params,
                                               loss=self.loss, optimizer=self.optimizer, metrics=self.metrics)
@@ -182,6 +189,7 @@ class HeteroDNNRecClient(HeteroDNNRecBase):
         param_pb.genres_dim = self.genres_dim
         param_pb.tags_dim = self.tags_dim
         param_pb.max_clk_num = self.max_clk_num
+        param_pb.max_title_len = self.max_title_len
         return param_pb
 
     def predict(self, data_inst):
@@ -222,6 +230,7 @@ class HeteroDNNRecClient(HeteroDNNRecBase):
         self.genres_dim = model_obj.genres_dim
         self.tags_dim = model_obj.tags_dim
         self.max_clk_num = model_obj.max_clk_num
+        self.max_title_len = model_obj.max_title_len
         self.model_param.restore_from_pb(meta_obj.params)
         self._init_model(self.model_param)
         self.aggregator_iter = meta_obj.aggregate_iter
@@ -242,13 +251,25 @@ class HeteroDNNRecHost(HeteroDNNRecClient):
     def __init__(self):
         super().__init__()
         self.role = consts.HOST
-        self.user_num_sync = user_num_transfer_sync.Host()
+        self.user_num_sync = dnnrec_embedding_transfer_sync.Host()
 
     def send_user_num(self, data):
         self.user_num_sync.send_host_user_num(data)
 
     def get_user_num(self):
         return self.user_num_sync.get_guest_user_num()
+
+    def send_user_ids(self, data):
+        self.user_num_sync.send_host_user_ids(data)
+
+    def get_user_ids(self):
+        return self.user_num_sync.get_guest_user_ids()
+
+    def send_item_embedding(self, data):
+        self.user_num_sync.send_host_item_embedding(data)
+
+    def get_item_embedding(self):
+        return self.user_num_sync.get_guest_item_embedding()
 
 
 class HeteroDNNRecGuest(HeteroDNNRecClient):
@@ -259,10 +280,22 @@ class HeteroDNNRecGuest(HeteroDNNRecClient):
     def __init__(self):
         super().__init__()
         self.role = consts.GUEST
-        self.user_num_sync = user_num_transfer_sync.Guest()
+        self.user_num_sync = dnnrec_embedding_transfer_sync.Guest()
 
     def send_user_num(self, data):
         self.user_num_sync.send_guest_user_num(data)
 
     def get_user_num(self):
         return self.user_num_sync.get_host_user_num()
+
+    def send_user_ids(self, data):
+        self.user_num_sync.send_guest_user_ids(data)
+
+    def get_user_ids(self):
+        return self.user_num_sync.get_host_user_ids()
+
+    def send_item_embedding(self, data):
+        self.user_num_sync.send_guest_item_embedding(data)
+
+    def get_item_embedding(self):
+        return self.user_num_sync.get_host_item_embedding()

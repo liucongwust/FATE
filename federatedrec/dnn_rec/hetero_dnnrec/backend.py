@@ -17,12 +17,10 @@
 #  limitations under the License.
 
 import io
-import os
 import copy
 import typing
 import zipfile
 import tempfile
-import traceback
 
 import tensorflow as tf
 from tensorflow.keras import Model
@@ -189,7 +187,7 @@ class DNNRecModel:
 
         return model_bytes
 
-    def build(self, user_num, item_num, embedding_dim, title_dim, genres_dim, tags_dim, max_clk_num,
+    def build(self, user_num, item_num, embedding_dim, title_dim, max_title_len, genres_dim, tags_dim, max_clk_num,
               mlp_params={}, optimizer='rmsprop', loss='mse', metrics='mse'):
         """
         build network graph of model
@@ -210,7 +208,7 @@ class DNNRecModel:
         users_input = Input(shape=(1,), dtype='int32', name='user_input')
         items_input = Input(shape=(1,), dtype='int32', name='item_input')
 
-        title_input = Input(shape=(title_dim,), dtype='float32', name='title_input')
+        title_input = Input(shape=(max_title_len,), dtype='float32', name='title_input')
         genres_input = Input(shape=(genres_dim,), dtype='float32', name='genres_input')
         tags_input = Input(shape=(tags_dim,), dtype='float32', name='tags_input')
         clk_items_input = Input(shape=(max_clk_num,), dtype='int32', name='clk_items_input')
@@ -226,12 +224,19 @@ class DNNRecModel:
                                      embeddings_initializer=RandomNormal(stddev=0.1),
                                      mask_zero=True, name='item_embedding')
 
+        title_embed_layer = Embedding(title_dim, embedding_dim,
+                                      embeddings_initializer=RandomNormal(stddev=0.1),
+                                      mask_zero=True, name='title_embedding')
+
         item_embed = item_embed_layer(items)
         flatten_item_embed = Flatten()(item_embed)
-        LOGGER.info(f"shape of title: {title_input.shape}, genres: {genres_input.shape}, tag: {tags_input.shape}, "
+
+        title_embed = title_embed_layer(title_input)
+        avg_title_embed = Lambda(lambda x: tf.keras.backend.mean(x, axis=1), name="avg_title_embed")(title_embed)
+        LOGGER.info(f"shape of avg_title_embed: {avg_title_embed.shape}, genres: {genres_input.shape}, tag: {tags_input.shape}, "
                     f"clicked items: {clk_items_input.shape}, item embed: {item_embed.shape}, "
                     f"flatten item embed: {flatten_item_embed.shape}")
-        item_dense = Concatenate(name="item_dense")([flatten_item_embed, genres_input, tags_input, title_input])
+        item_dense = Concatenate(name="item_dense")([flatten_item_embed, genres_input, tags_input, avg_title_embed])
 
         user_embed = user_embed_layer(users)
 
@@ -277,7 +282,7 @@ class DNNRecModel:
         LOGGER.info(f"finish building model, in {self.__class__.__name__} _build function")
 
     @classmethod
-    def build_model(cls, user_num, item_num, embedding_dim, title_dim, genres_dim, tags_dim, max_clk_num,
+    def build_model(cls, user_num, item_num, embedding_dim, title_dim, max_title_len, genres_dim, tags_dim, max_clk_num,
                     mlp_params={}, optimizer='rmsprop', loss='mse', metrics='mse'):
         """
         build model
@@ -301,7 +306,7 @@ class DNNRecModel:
         model = cls(user_num=user_num, item_num=item_num, embedding_dim=embedding_dim, mlp_params=mlp_params)
         model.build(user_num=user_num, item_num=item_num, embedding_dim=embedding_dim, mlp_params=mlp_params,
                     title_dim=title_dim, genres_dim=genres_dim, tags_dim=tags_dim, max_clk_num=max_clk_num,
-                    loss=loss, optimizer=optimizer, metrics=metrics)
+                    max_title_len=max_title_len, loss=loss, optimizer=optimizer, metrics=metrics)
         return model
 
     @property

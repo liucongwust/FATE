@@ -31,4 +31,5 @@ message DNNRecModelParam {
     int32 genres_dim = 9;
     int32 tags_dim = 10;
     int32 max_clk_num = 11;
+    int32 max_title_len = 12;
 }

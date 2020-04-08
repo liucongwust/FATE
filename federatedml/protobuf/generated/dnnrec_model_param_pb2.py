@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='com.webank.ai.fate.core.mlmodel.buffer.dnnrec',
   syntax='proto3',
   serialized_options=_b('B\025DNNRecModelParamProto'),
-  serialized_pb=_b('\n\x18\x64nnrec-model-param.proto\x12-com.webank.ai.fate.core.mlmodel.buffer.dnnrec\"\xf3\x01\n\x10\x44NNRecModelParam\x12\x16\n\x0e\x61ggregate_iter\x18\x01 \x01(\x05\x12\x19\n\x11saved_model_bytes\x18\x02 \x01(\x0c\x12\x14\n\x0closs_history\x18\x03 \x03(\x01\x12\x14\n\x0cis_converged\x18\x04 \x01(\x08\x12\x0e\n\x06header\x18\x05 \x03(\t\x12\x10\n\x08user_num\x18\x06 \x01(\x05\x12\x10\n\x08item_num\x18\x07 \x01(\x05\x12\x11\n\ttitle_dim\x18\x08 \x01(\x05\x12\x12\n\ngenres_dim\x18\t \x01(\x05\x12\x10\n\x08tags_dim\x18\n \x01(\x05\x12\x13\n\x0bmax_clk_num\x18\x0b \x01(\x05\x42\x17\x42\x15\x44NNRecModelParamProtob\x06proto3')
+  serialized_pb=_b('\n\x18\x64nnrec-model-param.proto\x12-com.webank.ai.fate.core.mlmodel.buffer.dnnrec\"\x8a\x02\n\x10\x44NNRecModelParam\x12\x16\n\x0e\x61ggregate_iter\x18\x01 \x01(\x05\x12\x19\n\x11saved_model_bytes\x18\x02 \x01(\x0c\x12\x14\n\x0closs_history\x18\x03 \x03(\x01\x12\x14\n\x0cis_converged\x18\x04 \x01(\x08\x12\x0e\n\x06header\x18\x05 \x03(\t\x12\x10\n\x08user_num\x18\x06 \x01(\x05\x12\x10\n\x08item_num\x18\x07 \x01(\x05\x12\x11\n\ttitle_dim\x18\x08 \x01(\x05\x12\x12\n\ngenres_dim\x18\t \x01(\x05\x12\x10\n\x08tags_dim\x18\n \x01(\x05\x12\x13\n\x0bmax_clk_num\x18\x0b \x01(\x05\x12\x15\n\rmax_title_len\x18\x0c \x01(\x05\x42\x17\x42\x15\x44NNRecModelParamProtob\x06proto3')
 )
 
 
@@ -109,6 +109,13 @@ _DNNRECMODELPARAM = _descriptor.Descriptor(
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='max_title_len', full_name='com.webank.ai.fate.core.mlmodel.buffer.dnnrec.DNNRecModelParam.max_title_len', index=11,
+      number=12, type=5, cpp_type=1, label=1,
+      has_default_value=False, default_value=0,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
   ],
   extensions=[
   ],
@@ -122,7 +129,7 @@ _DNNRECMODELPARAM = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=76,
-  serialized_end=319,
+  serialized_end=342,
 )
 
 DESCRIPTOR.message_types_by_name['DNNRecModelParam'] = _DNNRECMODELPARAM
