@@ -17,12 +17,10 @@
 #  limitations under the License.
 
 import io
-import os
 import copy
 import typing
 import zipfile
 import tempfile
-import traceback
 
 import tensorflow as tf
 from tensorflow.keras import Model
@@ -64,6 +62,7 @@ class DNNRecModel:
         self._trainable_weights = None
         self._aggregate_weights = None
         self._model = None
+        self._item_embed_model = None
         self._sess = None
 
     def train(self, data: tf.keras.utils.Sequence, **kwargs):
@@ -80,6 +79,14 @@ class DNNRecModel:
             del left_kwargs["aggregate_every_n_epoch"]
         self._model.fit(x=data, epochs=epochs, verbose=1, shuffle=True, **left_kwargs)
         return epochs * len(data)
+
+    def train_on_batch(self, x, y=None, **kwargs):
+        left_kwargs = copy.deepcopy(kwargs)
+        if "aggregate_every_n_epoch" in kwargs:
+            epochs = kwargs["aggregate_every_n_epoch"]
+            del left_kwargs["aggregate_every_n_epoch"]
+        self._model.train_on_batch(x=x, y=y)
+        return epochs * len(x)
 
     def _set_model(self, _model):
         """
@@ -144,6 +151,14 @@ class DNNRecModel:
         """
         return self._model.predict(data)
 
+    def predict_on_batch(self, data, **kwargs):
+        """
+        Predict on input data and return prediction results which used in prediction.
+        :param data: input data.
+        :return: prediction results.
+        """
+        return self._model.predict(data)
+
     @classmethod
     def restore_model(cls, model_bytes, user_num, item_num, embedding_dim, title_dim,
                       genres_dim, tags_dim, max_clk_num):
@@ -189,7 +204,15 @@ class DNNRecModel:
 
         return model_bytes
 
-    def build(self, user_num, item_num, embedding_dim, title_dim, genres_dim, tags_dim, max_clk_num,
+    def generate_item_embedding(self, data):
+        """
+        :param data: batch data of click_items
+        :return: average embeddings of clicked items
+        """
+        pred_embedding = self._item_embed_model.predict_on_batch(data)
+        return pred_embedding
+
+    def build(self, user_num, item_num, embedding_dim, title_dim, max_title_len, genres_dim, tags_dim, max_clk_num,
               mlp_params={}, optimizer='rmsprop', loss='mse', metrics='mse'):
         """
         build network graph of model
@@ -210,10 +233,11 @@ class DNNRecModel:
         users_input = Input(shape=(1,), dtype='int32', name='user_input')
         items_input = Input(shape=(1,), dtype='int32', name='item_input')
 
-        title_input = Input(shape=(title_dim,), dtype='float32', name='title_input')
+        title_input = Input(shape=(max_title_len,), dtype='float32', name='title_input')
         genres_input = Input(shape=(genres_dim,), dtype='float32', name='genres_input')
         tags_input = Input(shape=(tags_dim,), dtype='float32', name='tags_input')
         clk_items_input = Input(shape=(max_clk_num,), dtype='int32', name='clk_items_input')
+        remote_item_embed_input = Input(shape=(embedding_dim,), dtype='float32', name='emote_item_embed')
 
         users = Lambda(lambda x: tf.keras.backend.squeeze(x, -1))(users_input)
         items = Lambda(lambda x: tf.strings.to_hash_bucket(tf.strings.as_string(x), item_num))(items_input)
@@ -226,12 +250,19 @@ class DNNRecModel:
                                      embeddings_initializer=RandomNormal(stddev=0.1),
                                      mask_zero=True, name='item_embedding')
 
+        title_embed_layer = Embedding(title_dim, embedding_dim,
+                                      embeddings_initializer=RandomNormal(stddev=0.1),
+                                      mask_zero=True, name='title_embedding')
+
         item_embed = item_embed_layer(items)
         flatten_item_embed = Flatten()(item_embed)
-        LOGGER.info(f"shape of title: {title_input.shape}, genres: {genres_input.shape}, tag: {tags_input.shape}, "
+
+        title_embed = title_embed_layer(title_input)
+        avg_title_embed = Lambda(lambda x: tf.keras.backend.mean(x, axis=1), name="avg_title_embed")(title_embed)
+        LOGGER.info(f"shape of avg_title_embed: {avg_title_embed.shape}, genres: {genres_input.shape}, tag: {tags_input.shape}, "
                     f"clicked items: {clk_items_input.shape}, item embed: {item_embed.shape}, "
                     f"flatten item embed: {flatten_item_embed.shape}")
-        item_dense = Concatenate(name="item_dense")([flatten_item_embed, genres_input, tags_input, title_input])
+        item_dense = Concatenate(name="item_dense")([flatten_item_embed, genres_input, tags_input, avg_title_embed])
 
         user_embed = user_embed_layer(users)
 
@@ -239,7 +270,7 @@ class DNNRecModel:
         clk_items_embed = item_embed_layer(clk_items)
         avg_clk_embed = Lambda(lambda x: tf.keras.backend.mean(x, axis=1), name="avg_clk_embed")(clk_items_embed)
         LOGGER.info(f"shape of clk_items_embed: {clk_items_embed.shape}, avg_clk_embed: {avg_clk_embed.shape}")
-        user_dense = Concatenate(name="user_dense")([user_embed, avg_clk_embed])
+        user_dense = Concatenate(name="user_dense")([user_embed, avg_clk_embed, remote_item_embed_input])
 
         item_dnn_squential = Sequential()
         for idx in range(mlp_params["num_layer"]):
@@ -264,8 +295,11 @@ class DNNRecModel:
 
         optimizer_instance = getattr(tf.keras.optimizers, optimizer.optimizer)(**optimizer.kwargs)
 
-        self._model = Model(inputs=[users_input, items_input, title_input, genres_input, tags_input, clk_items_input],
+        self._model = Model(inputs=[users_input, items_input, title_input, genres_input, tags_input,
+                                    clk_items_input, remote_item_embed_input],
                             outputs=pred_out)
+        self._item_embed_model = Model(inputs=[clk_items_input], outputs=avg_clk_embed)
+
         # model for prediction
         LOGGER.info(f"model output names {self._model.output_names}")
         self._model.compile(optimizer=optimizer_instance,
@@ -277,7 +311,7 @@ class DNNRecModel:
         LOGGER.info(f"finish building model, in {self.__class__.__name__} _build function")
 
     @classmethod
-    def build_model(cls, user_num, item_num, embedding_dim, title_dim, genres_dim, tags_dim, max_clk_num,
+    def build_model(cls, user_num, item_num, embedding_dim, title_dim, max_title_len, genres_dim, tags_dim, max_clk_num,
                     mlp_params={}, optimizer='rmsprop', loss='mse', metrics='mse'):
         """
         build model
@@ -301,7 +335,7 @@ class DNNRecModel:
         model = cls(user_num=user_num, item_num=item_num, embedding_dim=embedding_dim, mlp_params=mlp_params)
         model.build(user_num=user_num, item_num=item_num, embedding_dim=embedding_dim, mlp_params=mlp_params,
                     title_dim=title_dim, genres_dim=genres_dim, tags_dim=tags_dim, max_clk_num=max_clk_num,
-                    loss=loss, optimizer=optimizer, metrics=metrics)
+                    max_title_len=max_title_len, loss=loss, optimizer=optimizer, metrics=metrics)
         return model
 
     @property

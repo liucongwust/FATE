@@ -94,6 +94,30 @@
       "dst": [
         "host"
       ]
+    },
+    "host_user_ids": {
+      "src": "host",
+      "dst": [
+        "guest"
+      ]
+    },
+    "guest_user_ids": {
+      "src": "guest",
+      "dst": [
+        "host"
+      ]
+    },
+    "host_item_embedding": {
+      "src": "host",
+      "dst": [
+        "guest"
+      ]
+    },
+    "guest_item_embedding": {
+      "src": "guest",
+      "dst": [
+        "host"
+      ]
     }
   }
 }
