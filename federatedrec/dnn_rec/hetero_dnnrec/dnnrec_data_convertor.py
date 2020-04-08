@@ -1,4 +1,5 @@
 import random
+import sys
 from collections import defaultdict
 
 import numpy as np
@@ -39,6 +40,7 @@ class DNNRecSequenceData(tf.keras.utils.Sequence):
         self.genres_corpus = list()
         self.title_corpus = list()
         self._keys = list()
+        self._max_title_len = -sys.maxsize
 
         self.title_input = None
         self.genres_input = None
@@ -81,10 +83,14 @@ class DNNRecSequenceData(tf.keras.utils.Sequence):
         self._n_users, self._n_items = max(self._user_ids) + 1, self._item_ids.__len__()
 
         # Get a list version so we do not need to perform type casting
+        self.user_items = list(map(lambda x: (x[0], list(x[1])), self.user_items.items()))
         self.user_items = dict(self.user_items)
+        self.item_users = list(map(lambda x: (x[0], list(x[1])), self.item_users.items()))
         self.item_users = dict(self.item_users)
 
         self._max_clicks = max(list(map(lambda x: len(x[1]), self.user_items.items())))
+        self._max_clicks = 100 if self._max_clicks > 100 else self._max_clicks
+        self.user_items = dict((uid, items[:self._max_clicks]) for uid, items in self.user_items.items())
 
         self.users = None
         self.items = None
@@ -108,7 +114,7 @@ class DNNRecSequenceData(tf.keras.utils.Sequence):
         data size of corpus
         :return:
         """
-        return len(self.size)
+        return self.size
 
     @property
     def user_ids(self):
@@ -172,6 +178,22 @@ class DNNRecSequenceData(tf.keras.utils.Sequence):
         """
         return self._max_clicks
 
+    @property
+    def max_title_len(self):
+        """
+        max word count in titles
+        :return:
+        """
+        return self._max_title_len
+
+    @property
+    def user_click_items(self):
+        """
+        clicked items of each user
+        :return:
+        """
+        return self.user_items
+
     def transfer_data(self):
         # Allocate inputs
         # print("transfer_data")
@@ -199,15 +221,19 @@ class DNNRecSequenceData(tf.keras.utils.Sequence):
             # if tags:
             #     LOGGER.info(
             #         f"title {title}, genres: {genres}, tags: {tags}\n"
-            #         f"transformed data, title: {self.title_count_vector.transform([title]).toarray().nonzero()} \n"
-            #         f"tags : {self.tag_count_vector.transform([tags.replace('|', ' ')]).toarray().nonzero()} \n"
-            #         f"genres: {self.genres_count_vector.transform([genres.replace('|', ' ')]).toarray().nonzero()}")
+            #         f"transformed data, title: {self.title_count_vector.transform([title]).toarray().nonzero()[1]} \n"
+            #         f"tags : {self.tag_count_vector.transform([tags.replace('|', ' ')]).toarray().nonzero()[1]} \n"
+            #         f"genres: {self.genres_count_vector.transform([genres.replace('|', ' ')]).toarray().nonzero()[1]}")
 
-            title_input[idx, :] = self.title_count_vector.transform([title]).toarray()[0, :]
+            title_index = self.title_count_vector.transform([title]).toarray().nonzero()[1]
+            if len(title_index.tolist()) > self._max_title_len:
+                self._max_title_len = len(title_index.tolist())
+            title_input[idx, :len(title_index.tolist())] = title_index
             tags_input[idx, :] = self.tag_count_vector.transform([tags.replace("|", " ")]).toarray()[0, :]
             genres_input[idx, :] = self.genres_count_vector.transform([genres.replace("|", " ")]).toarray()[0, :]
             clk_items = list(self.user_items[user_idx])
-            click_items[idx, :len(clk_items)] = np.array(clk_items)
+            tmp_len = min(len(clk_items), self._max_clicks)
+            click_items[idx, :tmp_len] = np.array(clk_items[:tmp_len])
 
             idx += 1
             self._keys.append(key)
@@ -219,7 +245,7 @@ class DNNRecSequenceData(tf.keras.utils.Sequence):
         self.items = items[shuffle_idx]
         self.clk_items_input = click_items[shuffle_idx, :]
         self.genres_input = genres_input[shuffle_idx, :]
-        self.title_input = title_input[shuffle_idx, :]
+        self.title_input = title_input[shuffle_idx, :self.max_title_len]
         self.tags_input = tags_input[shuffle_idx, :]
         self.y = y[shuffle_idx]
 
