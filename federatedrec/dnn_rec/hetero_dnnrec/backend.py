@@ -112,6 +112,7 @@ class DNNRecModel:
         """
         weights = self.get_model_weights()
         self.set_model_weights(func(weights))
+        LOGGER.info(f"modify weights")
         return weights
 
     def get_model_weights(self) -> OrderDictWeights:

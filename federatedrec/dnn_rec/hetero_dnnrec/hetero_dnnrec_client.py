@@ -176,7 +176,7 @@ class HeteroDNNRecClient(HeteroDNNRecBase):
                 LOGGER.info(f'get remote item_embeddings')
                 remote_item_embeddings = self.get_item_embedding()[:len(user_ids), :]
                 LOGGER.info(f"remote_item_embeddings shape: {remote_item_embeddings.shape}")
-                LOGGER.info(f"remote item embeddings:{remote_item_embeddings[:2, :]}")
+                # LOGGER.info(f"remote item embeddings:{remote_item_embeddings[:2, :]}")
 
                 for idx in range(data.__len__()):
                     x, y = data.__getitem__(index=idx)
@@ -190,85 +190,26 @@ class HeteroDNNRecClient(HeteroDNNRecBase):
                     LOGGER.debug(f"begin train idx: {idx}")
                     self._model.train_on_batch(x=x, y=y, aggregate_every_n_epoch=self.aggregate_every_n_epoch)
 
+                LOGGER.info(f"role {self.role} finish {self.aggregator_iter}_th train")
+
                 # send model for aggregate, then set aggregated model to local
                 modify_func: typing.Callable = functools.partial(self.aggregator.aggregate_then_get,
                                                                  degree=epoch_degree * self.aggregate_every_n_epoch,
                                                                  suffix=self._iter_suffix())
                 self._model.modify(modify_func)
 
+                LOGGER.info(f"role {self.role} finish {self.aggregator_iter}_th modify")
+
                 # calc loss and check convergence
                 if self._check_monitored_status(data, epoch_degree):
                     LOGGER.info(f"early stop at iter {self.aggregator_iter}")
                     break
-
                 LOGGER.info(f"role {self.role} finish {self.aggregator_iter}_th aggregation")
                 self.aggregator_iter += 1
             else:
                 LOGGER.warn(f"reach max iter: {self.aggregator_iter}, not converged")
         except Exception as e:
-            LOGGER.info(traceback.format_exc())
-
-
-    # def fit(self, data_instances, validate_data=None):
-    #     """
-    #     train model
-    #     :param data_instances: training data
-    #     :param validate_data:  validation data
-    #     :return:
-    #     """
-    #     data = self.data_converter.convert(data_instances, batch_size=self.batch_size)
-    #
-    #     user_num = data.user_count
-    #     item_num = data.item_count
-    #     title_dim = data.title_dim
-    #     genres_dim = data.genres_dim
-    #     tags_dim = data.tag_dim
-    #     max_clk_num = data.max_clicks
-    #
-    #     LOGGER.info(f'send user_num')
-    #     self.send_user_num(user_num)
-    #     LOGGER.info(f'get remote user_num')
-    #     remote_user_num = self.get_user_num()
-    #     LOGGER.info(f'local user num: {user_num}, remote user num: {remote_user_num}')
-    #     self.user_num = max(remote_user_num, user_num)
-    #     self.item_num = item_num
-    #     self.max_clk_num = max_clk_num
-    #     self.genres_dim = genres_dim
-    #     self.tags_dim = tags_dim
-    #     self.title_dim = title_dim
-    #
-    #     self._model = DNNRecModel.build_model(user_num=self.user_num, item_num=item_num,
-    #                                           embedding_dim=self.params.init_param.embed_dim,
-    #                                           title_dim=title_dim, genres_dim=genres_dim, tags_dim=tags_dim,
-    #                                           max_clk_num=max_clk_num,
-    #                                           mlp_params=self.model_param.mlp_params,
-    #                                           loss=self.loss, optimizer=self.optimizer, metrics=self.metrics)
-    #
-    #     epoch_degree = float(len(data))
-    #
-    #     while self.aggregator_iter < self.max_iter:
-    #         LOGGER.info(f"start {self.aggregator_iter}_th aggregation")
-    #
-    #         # train
-    #         LOGGER.debug(f"begin train")
-    #         self._model.train(data, aggregate_every_n_epoch=self.aggregate_every_n_epoch)
-    #         LOGGER.debug(f"after train")
-    #
-    #         # send model for aggregate, then set aggregated model to local
-    #         modify_func: typing.Callable = functools.partial(self.aggregator.aggregate_then_get,
-    #                                                          degree=epoch_degree * self.aggregate_every_n_epoch,
-    #                                                          suffix=self._iter_suffix())
-    #         self._model.modify(modify_func)
-    #
-    #         # calc loss and check convergence
-    #         if self._check_monitored_status(data, epoch_degree):
-    #             LOGGER.info(f"early stop at iter {self.aggregator_iter}")
-    #             break
-    #
-    #         LOGGER.info(f"role {self.role} finish {self.aggregator_iter}_th aggregation")
-    #         self.aggregator_iter += 1
-    #     else:
-    #         LOGGER.warn(f"reach max iter: {self.aggregator_iter}, not converged")
+            LOGGER.info(f"exception: {traceback.format_exc()}")
 
     def export_model(self):
         """
@@ -370,29 +311,6 @@ class HeteroDNNRecClient(HeteroDNNRecBase):
         pred_data = data_inst.join(pred_tbl, lambda d, pred: [d.label, pred[0], pred[1], {"label": pred[0]}])
         LOGGER.info(f"pred_data sample: {pred_data.take(20)}")
         return pred_data
-
-    # def predict(self, data_inst):
-    #     """
-    #     predicton function. Note that: NCF model use different DataConverter in evaluation and prediction procedure.
-    #     :param data_inst: data instance
-    #     :return: the prediction results
-    #     """
-    #     LOGGER.info(f"data_inst type: {type(data_inst)}, size: {data_inst.count()}, table name: {data_inst.get_name()}")
-    #     LOGGER.info(f"current flowid: {self.flowid}")
-    #
-    #     data = self.data_converter.convert(data_inst, batch_size=self.batch_size)
-    #
-    #     LOGGER.info(f"data example: {data_inst.first()[1].features.astype(str)}")
-    #     LOGGER.info(f"converted data, size :{data.size}")
-    #     predict = self._model.predict(data)
-    #     LOGGER.info(f"predict shape: {predict.shape}")
-    #     threshold = self.params.predict_param.threshold
-    #
-    #     kv = [(x[0], (0 if x[1] <= threshold else 1, x[1].item())) for x in zip(data.get_keys(), predict)]
-    #     pred_tbl = fate_session.parallelize(kv, include_key=True)
-    #     pred_data = data_inst.join(pred_tbl, lambda d, pred: [d.label, pred[0], pred[1], {"label": pred[0]}])
-    #     LOGGER.info(f"pred_data sample: {pred_data.take(20)}")
-    #     return pred_data
 
     def load_model(self, model_dict):
         """
