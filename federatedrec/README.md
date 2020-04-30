@@ -77,4 +77,11 @@ Build hetero CDL module through multiple parties.
 - Data Input: Input DTable of user-item rating matrix data.
 - Model Output: Hetero CDL model.
 
+##### 10. [Hetero DNNREc](./dnn_rec/README.md)
+Build hetero DNNRec module through multiple parties.
+
+- Corresponding module name: HeteroDNNRec
+- Data Input: Input DTable of user-item rating matrix data.
+- Model Output: Hetero DNNRec model.
+
 More available algorithms are coming soon.
